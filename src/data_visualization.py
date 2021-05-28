@@ -1,31 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-attributes_names = ["Fixed acidity", "Volatile acidity", "Citric acidity", "Residual sugar", "Chlorides",
-                     "Free sulfur dioxide", "Total sulfur dioxide", "Density", "pH", "Sulphates", "Alcohol"]
-n_attr = len(attributes_names)
-class_names = ["Low quality", "High quality"]
-
-
-def load(fileName):
-    
-    class_labels_list = []
-    list_of_vectors = []
-    
-    with open(fileName) as f:
-        for line in f:
-            try:
-                current_vector = np.array(line.split(",")[0:n_attr], dtype = np.float).reshape((n_attr,1))
-                list_of_vectors.append(current_vector)
-                class_labels_list.append(int (line.split(",")[n_attr] ))
-            except:
-                pass
-
-    data_matrix = np.array(list_of_vectors).reshape((len(list_of_vectors),n_attr)).T
-    class_labels = np.array(class_labels_list)
-
-    return data_matrix, class_labels
-
+from load_data import load, attributes_names, class_names, n_attr
 
 def print_histograms(data_matrix, class_labels):
     for i, attribute in enumerate(attributes_names):
@@ -41,7 +16,7 @@ def print_histograms(data_matrix, class_labels):
 def print_scatterplots(data_matrix, class_labels):
     for i, attribute1 in enumerate(attributes_names):
         for j, attribute2 in enumerate(attributes_names):
-            if attribute1 != attribute2:
+            if (attribute1 != attribute2):
                 plt.figure()
                 plt.xlabel(attribute1)
                 plt.ylabel(attribute2)
@@ -60,8 +35,11 @@ if __name__ == "__main__":
     # load the dataset
     data_matrix, class_labels = load("../Data/Train.txt")
 
+    print("*********** Some statistics about the dataset **************")
+    print("Bad quality samples: %d, Good quality samples: %d" % (sum(class_labels == 0), sum(class_labels == 1)))
+
     # print histograms 
-    print_histograms(data_matrix, class_labels)
+    #print_histograms(data_matrix, class_labels)
 
     # print scatter plots
     print_scatterplots(data_matrix, class_labels)
