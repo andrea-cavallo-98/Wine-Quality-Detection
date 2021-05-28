@@ -17,7 +17,7 @@ def load(fileName):
             try:
                 current_vector = np.array(line.split(",")[0:n_attr], dtype = np.float).reshape((n_attr,1))
                 list_of_vectors.append(current_vector)
-                class_labels_list.append( class_names.index(line.split(",")[n_attr].strip()) )
+                class_labels_list.append(int (line.split(",")[n_attr] ))
             except:
                 pass
 
