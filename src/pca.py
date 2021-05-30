@@ -17,10 +17,10 @@ def compute_pca(m, D, use_svd = False):
     C = covariance_matrix(D)
     # compute eigenvalues and eigenvectors
     if use_svd:
-        U, s, Vh = np.linalg.svd(C)
+        U, _, _ = np.linalg.svd(C)
         P = U[:, 0:m]
     else:
-        s,U = np.linalg.eigh(C)
+        _, U = np.linalg.eigh(C)
         # extract leading eigenvectors
         P = U[:, ::-1][:, 0:m]
     # apply projection to initial matrix

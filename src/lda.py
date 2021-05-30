@@ -4,7 +4,6 @@ import scipy.linalg
 import matplotlib.pyplot as plt
 from load_data import load, attributes_names, class_names, n_attr, n_class
 
-
 def vrow(vet):
     return vet.reshape((1,vet.shape[0]))
 
@@ -27,9 +26,9 @@ def within_between_covariances(D, class_labels):
     
     for current_class in range(n_class):
         current_class_dataset = D[:, class_labels == current_class]
-        n_c = current_class_dataset.shape[0]
+        n_c = current_class_dataset.shape[1]
         mu_c = current_class_dataset.mean(1).reshape((D.shape[0],1))
-        SB += np.dot(mu_c - mu, (mu_c - mu).T)
+        SB += n_c * np.dot(mu_c - mu, (mu_c - mu).T)
 
         C = covariance_matrix(current_class_dataset)
         SW += C
@@ -52,27 +51,40 @@ def compute_lda(m, D, class_labels, generalized_eig = True):
     else:
         U,s,_ = np.linalg.svd(SW)
         P1 = np.dot(U * vrow(1.0/(s**0.5)), U.T)
-        #P1 = np.dot(np.dot(U, np.diag(1.0/(s**0.5))), U.T)
         SBT = np.dot(np.dot(P1, SB), P1.T)
         s, U = np.linalg.eigh(SBT)
         P2 = U[:, ::-1][:, 0:m]
         W = np.dot(P1.T, P2)
 
-    # find a basis of W
-    UW, _, _ = np.linalg.svd(W)
-    W_basis = UW[:, 0:m]
-
     return np.dot(W.T, D)
 
 
+def compute_errors(D, L):
+    # Try all possible thresholds to pick the best one 
+    best_t = 0
+    best_err = 1
+    for t in D:
+        PredictedLabels = np.zeros(D.shape)
+        PredictedLabels[D > t] = 1
+        err = sum(sum(PredictedLabels != L)) / L.shape[0]
+        if err < best_err:
+            best_err = err
+            best_t = t
+    return best_err, best_t
 
 if __name__ == "__main__":
     data_matrix, class_labels = load("../Data/Train.txt")
-    projected_matrix = compute_lda(2, data_matrix, class_labels, True)
+    projected_matrix = compute_lda(1, data_matrix, class_labels, True)
+    
+    err, _ = compute_errors(projected_matrix, class_labels)
+    print("Error rate: %.4f" % err)
+
+    """
     for current_class_label in range(n_class):
         mask = (class_labels == current_class_label)
-        plt.scatter(projected_matrix[0,mask], projected_matrix[1,mask])
+        plt.scatter(projected_matrix[0,mask], np.zeros(projected_matrix[0,mask].shape))
     plt.legend(class_names)
     plt.show()
+    """
 
 
