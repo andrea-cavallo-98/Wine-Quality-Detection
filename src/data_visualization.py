@@ -42,13 +42,16 @@ def feat_heatmap(D):
     sns.heatmap(np.corrcoef(D))
     plt.show()
     
+def Z_score(D):
+    return (D - D.mean(1).reshape((D.shape[0], 1))) / (np.var(D, axis = 1).reshape((D.shape[0], 1)) ** 0.5)
+
 
 if __name__ == "__main__":
 
 
     # load the dataset
     data_matrix, class_labels = load("../Data/Train.txt")
-
+    """
     print("*********** Some statistics about the dataset **************")
     print("Bad quality samples: %d, Good quality samples: %d" % (sum(class_labels == 0), sum(class_labels == 1)))
 
@@ -62,7 +65,7 @@ if __name__ == "__main__":
 
     # gauss_feat = gaussianize_features(data_matrix)
     # np.save("gaussianized_features.npy", gauss_feat)
-
+    """
 
 
     # print histograms 
@@ -70,7 +73,8 @@ if __name__ == "__main__":
 
     # print scatter plots
     # print_scatterplots(data_matrix, class_labels)
-    
+    print(data_matrix.mean(1))
+    print(np.var(data_matrix, axis = 1))
     # subtract mean
     #normalized_data_matrix = data_matrix - data_matrix.mean(1).reshape((data_matrix.shape[0], 1))
     #print_histograms(normalized_data_matrix, class_labels)

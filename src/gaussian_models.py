@@ -5,6 +5,7 @@ import numpy.linalg
 from scipy.special import logsumexp
 from prediction_measurement import min_DCF, compute_llr
 from pca import compute_pca
+from data_visualization import Z_score
 
 def mean_and_covariance_matrix(D):
 
@@ -226,20 +227,23 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, seed = 0):
 
 if __name__ == "__main__":
     D, L = load("../Data/Train.txt")  
+    D = Z_score(D)
     (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
     DG = np.load("gaussianized_features.npy")
     (DGTR, LGTR), (DGTE, LGTE) = split_db_4to1(DG, L)
     DG10 = compute_pca(10, DG)
     (DGTR10, LGTR10), (DGTE10, LGTE10) = split_db_4to1(DG10, L)
+    DG9 = compute_pca(9, DG)
+    (DGTR9, LGTR9), (DGTE9, LGTE9) = split_db_4to1(DG9, L)
     k = 5
     use_logs = True
     pi = 0.5
     Cfn = 1
     Cfp = 1
-    fileName = "../Results/gaussian_results.txt"
+    fileName = "../Results/gaussian_resultsZ.txt"
 
     with open(fileName, "w") as f:
-        
+    
         f.write("*** min DCF for different gaussian models ***\n\n")
         f.write("Gaussianized features - no PCA\n")
         f.write("5-fold cross validation\n")
@@ -261,7 +265,7 @@ if __name__ == "__main__":
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) + 
             " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
 
-
+        
         f.write("\n\nGaussianized features - PCA = 10\n")
         f.write("5-fold cross validation\n")
         # K FOLD CROSS VALIDATION
@@ -281,8 +285,27 @@ if __name__ == "__main__":
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) 
             + " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
-
         
+        f.write("\n\nGaussianized features - PCA = 9\n")
+        f.write("5-fold cross validation\n")
+        # K FOLD CROSS VALIDATION
+        DCF_MVG = k_fold_cross_validation(DG9, L, MVG, k, pi, Cfp, Cfn, use_logs)
+        DCF_naive_Bayes = k_fold_cross_validation(DG9, L, naive_Bayes, k, pi, Cfp, Cfn, use_logs)
+        DCF_tied_MVG = k_fold_cross_validation(DG9, L, tied_MVG, k, pi, Cfp, Cfn, use_logs)
+        DCF_tied_naive_Bayes = k_fold_cross_validation(DG9, L, tied_naive_Bayes, k, pi, Cfp, Cfn, use_logs)
+
+        f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) + 
+            " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
+        f.write("\nsingle fold\n")
+        # K FOLD CROSS VALIDATION
+        _, DCF_MVG = MVG(DGTR9, LGTR9, DGTE9, LGTE9, pi, Cfp, Cfn, use_logs)
+        _, DCF_naive_Bayes = naive_Bayes(DGTR9, LGTR9, DGTE9, LGTE9, pi, Cfp, Cfn, use_logs)
+        _, DCF_tied_MVG = tied_MVG(DGTR9, LGTR9, DGTE9, LGTE9, pi, Cfp, Cfn, use_logs)
+        _, DCF_tied_naive_Bayes = tied_naive_Bayes(DGTR9, LGTR9, DGTE9, LGTE9, pi, Cfp, Cfn, use_logs)
+
+        f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) 
+            + " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
+
         f.write("\n\nRaw features - no PCA\n")
         f.write("5-fold cross validation\n")
         # K FOLD CROSS VALIDATION
@@ -302,6 +325,5 @@ if __name__ == "__main__":
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) + 
             " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
-
-
+        
 
