@@ -1,7 +1,7 @@
 
 import numpy as np
 from scipy.special import logsumexp
-from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_2to1
+from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_4to1
 
 
 def GAU_logpdf_ND(x, mu, C):
@@ -113,7 +113,7 @@ def GMM_classifier(DTR, LTR, DTE, LTE, t, psi, alpha, n_classes, components):
 if __name__ == "__main__":
 
     D, L = load("../Data/Train.txt")  
-    (DTR, LTR), (DTE, LTE) = split_db_2to1(D, L)
+    (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
     t = 1e-6
     psi = 0.01
 

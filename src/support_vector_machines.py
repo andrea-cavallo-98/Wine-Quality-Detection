@@ -1,7 +1,7 @@
 
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
-from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_2to1
+from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_4to1
 
 
 def obj_function_gradient_wrapper(H_hat):
@@ -97,7 +97,7 @@ def kernel_SVM(DTR, LTR, DTE, LTE, C, type, d = 0, c = 0, gamma = 0, csi = 0):
 if __name__ == "__main__":
 
     D, L = load("../Data/Train.txt")  
-    (DTR, LTR), (DTE, LTE) = split_db_2to1(D, L)
+    (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
 
 
     """

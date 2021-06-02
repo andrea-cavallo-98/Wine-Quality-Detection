@@ -2,8 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import logsumexp
-from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_2to1
-from gaussian_models import MVG, naive_Bayes, tied_covariance
+from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_4to1
 
 def confusion_matrix(true_labels, predicted_labels, n_labels):
 
@@ -126,11 +125,12 @@ if __name__ == "__main__":
     ## Compute optimal Bayes decisions for gaussian models
 
     D, L = load("../Data/Train.txt")  
-    (DTR, LTR), (DTE, LTE) = split_db_2to1(D, L)
+    (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
   
+    """
     _, _, _, S_MVG = MVG(DTR, LTR, DTE, LTE, True)
     _, _, _, S_naive_Bayes = naive_Bayes(DTR, LTR, DTE, LTE, True)
-    _, _, _, S_tied_covariance = tied_covariance(DTR, LTR, DTE, LTE, True)
+    _, _, _, S_tied_covariance = tied_MVG(DTR, LTR, DTE, LTE, True)
     llr_MVG = compute_llr(S_MVG)
     llr_naive_Bayes = compute_llr(S_naive_Bayes)
     llr_tied_covariance = compute_llr(S_tied_covariance)
@@ -152,7 +152,7 @@ if __name__ == "__main__":
             minDCF = min_DCF(llr, pi[index], Cfn[index], Cfp[index], LTE)
             print("%.3f | %.3f" % (DCF, minDCF))
 
-
+    """
         # Print ROC curve 
         #ROC_curve(llr, LTE)
 

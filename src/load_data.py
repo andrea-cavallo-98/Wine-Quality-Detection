@@ -27,8 +27,8 @@ def load(fileName):
     return data_matrix, class_labels
 
 
-def split_db_2to1(D, L, seed=0):
-    nTrain = int(D.shape[1]*2.0/3.0)
+def split_db_4to1(D, L, seed=0):
+    nTrain = int(D.shape[1]*4.0/5.0)
     np.random.seed(seed)
     idx = np.random.permutation(D.shape[1])
     idxTrain = idx[0:nTrain]

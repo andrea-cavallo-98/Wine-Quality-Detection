@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 from scipy.special import logsumexp
-from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_2to1
+from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_4to1
 
 
 def logreg_obj_wrap(DTR, LTR, l):
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     # print("\n\n BINARY LOGISTIC REGRESSION\n\n")
 
     D, L = load("../Data/Train.txt")  
-    (DTR, LTR), (DTE, LTE) = split_db_2to1(D, L)
+    (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
     l_val = [0, 1e-6, 1e-3, 1]
 
     for l in l_val:

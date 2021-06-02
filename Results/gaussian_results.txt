@@ -1,0 +1,18 @@
+*** min DCF for different gaussian models ***
+Gaussianized features - no PCA
+5-fold cross validation
+MVG: 0.3017944535073409 naive Bayes: 0.4437194127243067 tied MVG: 0.3474714518760196 tied naive Bayes: 0.4437194127243067
+single fold
+MVG: 0.25511628698879696 naive Bayes: 0.45959750740627237 tied MVG: 0.3439234514931726 tied naive Bayes: 0.44083495079511015
+
+Gaussianized features - PCA = 10
+5-fold cross validation
+MVG: 0.300978792822186 naive Bayes: 0.3939641109298532 tied MVG: 0.3531810766721044 tied naive Bayes: 0.35399673735725934
+single fold
+MVG: 0.24200633363979976 naive Bayes: 0.38774815268839175 tied MVG: 0.3587700480130759 tied naive Bayes: 0.36159634964415843
+
+Raw features - no PCA
+5-fold cross validation
+MVG: 0.31566068515497553 naive Bayes: 0.42251223491027734 tied MVG: 0.33442088091353994 tied naive Bayes: 0.40293637846655794
+single fold
+MVG: 0.2642421765927742 naive Bayes: 0.4089624408349508 tied MVG: 0.32689753805291655 tied naive Bayes: 0.3907106616269963
