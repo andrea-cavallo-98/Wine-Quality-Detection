@@ -1,0 +1,35 @@
+**** min DCF for different Logistic Regression models ****
+
+Values of min DCF for values of lambda = [0, 1e-6, 1e-4, 1e-2, 1, 100]
+
+Raw features
+5-fold: 1.0 single split: 1.0
+5-fold: 1.0 single split: 1.0
+5-fold: 1.0 single split: 1.0
+5-fold: 1.0 single split: 1.0
+5-fold: 1.0 single split: 1.0
+5-fold: 1.0 single split: 1.0
+
+Z-normalized features - no PCA
+5-fold: 0.2732463295269168 single split: 0.23744338883781116
+5-fold: 0.2732463295269168 single split: 0.23744338883781116
+5-fold: 0.2765089722675367 single split: 0.22896448394456365
+5-fold: 0.28548123980424145 single split: 0.23693261143460348
+5-fold: 0.36623164763458405 single split: 0.3366023087138625
+5-fold: 0.4584013050570962 single split: 0.4271461163891443
+
+Z-normalized features - PCA = 10
+5-fold: 0.2822185970636215 single split: 0.24258521469676847
+5-fold: 0.2822185970636215 single split: 0.24258521469676847
+5-fold: 0.28303425774877655 single split: 0.23860115095174855
+5-fold: 0.28792822185970635 single split: 0.22838560288759494
+5-fold: 0.37112561174551384 single split: 0.3366023087138625
+5-fold: 0.45921696574225124 single split: 0.4271461163891443
+
+Gaussianized features
+5-fold: 0.299347471451876 single split: 0.24830592161269455
+5-fold: 0.299347471451876 single split: 0.24830592161269455
+5-fold: 0.300978792822186 single split: 0.24830592161269455
+5-fold: 0.2920065252854812 single split: 0.25562706439200467
+5-fold: 0.34828711256117456 single split: 0.2830728368576974
+5-fold: 0.4453507340946167 single split: 0.4294616406170191

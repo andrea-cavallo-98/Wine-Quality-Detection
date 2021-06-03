@@ -1,7 +1,0 @@
-
-
-Raw features - no PCA
-5-fold cross validation
-MVG: 0.31566068515497553 naive Bayes: 0.42251223491027734 tied MVG: 0.33442088091353994 tied naive Bayes: 0.40293637846655794
-single fold
-MVG: 0.2642421765927742 naive Bayes: 0.4089624408349508 tied MVG: 0.32689753805291655 tied naive Bayes: 0.3907106616269963

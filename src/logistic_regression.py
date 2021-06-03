@@ -3,6 +3,9 @@ from scipy.optimize import fmin_l_bfgs_b
 from scipy.special import logsumexp
 from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_4to1
 from prediction_measurement import min_DCF, compute_llr
+from data_visualization import Z_score
+import matplotlib.pyplot as plt
+from pca import compute_pca
 
 def logreg_obj_wrap(DTR, LTR, l, pi_T):
 
@@ -11,27 +14,63 @@ def logreg_obj_wrap(DTR, LTR, l, pi_T):
 
         Nt = sum(LTR == 1)
         Nf = sum(LTR == 0)
+
+        
         J = l/2 * np.linalg.norm(w)**2 + pi_T / Nt * sum(np.log1p(np.exp( - (np.dot(w.T, DTR[:, LTR == 1]) + b )))) + \
             (1 - pi_T) / Nf * sum(np.log1p(np.exp((np.dot(w.T, DTR[:, LTR == 0]) + b ))))
 
-        return J
+        dJw = l * w - pi_T / Nt * np.sum(DTR[:, LTR == 1]/(1+np.exp(np.dot(w.T, DTR[:, LTR == 1]) + b)), axis = 1) + \
+            (1-pi_T) / Nf * np.sum(DTR[:, LTR == 0]/(1+np.exp(-np.dot(w.T, DTR[:, LTR == 0]) - b)), axis = 1)
+
+        dJb = -pi_T/Nt * np.sum(1/(1+np.exp(np.dot(w.T, DTR[:, LTR == 1]) + b))) + \
+            (1-pi_T) / Nf * np.sum(1/(1+np.exp(-np.dot(w.T, DTR[:, LTR == 0]) - b)))
+
+        dJ = np.concatenate((dJw, np.array(dJb).reshape(1,)))
+        return J, dJ
 
     return logreg_obj
 
 
-def binary_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp):
+def linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp):
     
     logreg_obj = logreg_obj_wrap(DTR, LTR, l, pi_T)
 
-    optV, _, _ = fmin_l_bfgs_b(logreg_obj, np.zeros(DTR.shape[0] + 1), approx_grad = True)   
+    optV, _, _ = fmin_l_bfgs_b(logreg_obj, np.zeros(DTR.shape[0] + 1), approx_grad = False)   
 
     w, b = optV[0:-1], optV[-1]
 
     # Compute scores
     s = np.dot(w.T, DTE) + b
-    #PredictedLabels = np.zeros(DTE.shape[1])
-    #PredictedLabels[s > 0] = 1
-    #acc = sum(PredictedLabels == LTE) / LTE.shape[0]
+
+    minDCF = min_DCF(s, pi, Cfn, Cfp, LTE)
+
+    return s, minDCF
+
+
+def map_to_feature_space(D):
+    phi = np.zeros([D.shape[0]**2+D.shape[0], D.shape[1]])
+    for index in range(D.shape[1]):
+        x = D[:, index].reshape(D.shape[0], 1)
+        phi[:, index] = np.concatenate((np.dot(x, x.T).reshape(x.shape[0]**2, 1), x)).reshape(phi.shape[0],)
+    return phi
+
+def quadratic_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp):
+
+    # Map training features to expanded feature space
+    phi = map_to_feature_space(DTR)
+
+    # Train a linear regression model on expanded feature space
+    logreg_obj = logreg_obj_wrap(phi, LTR, l, pi_T)
+
+    optV, _, _ = fmin_l_bfgs_b(logreg_obj, np.zeros(phi.shape[0] + 1), approx_grad = False)   
+
+    w, b = optV[0:-1], optV[-1]
+
+    # Map test features to expanded feature space
+    phi_test = map_to_feature_space(DTE)
+
+    # Compute scores
+    s = np.dot(w.T, phi_test) + b
 
     minDCF = min_DCF(s, pi, Cfn, Cfp, LTE)
 
@@ -75,24 +114,99 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, l, pi_T, seed = 0
 
 if __name__ == "__main__":
 
-    # BINARY LOGISTIC REGRESSION
+    for LR_type in ["linear", "quadratic"]:
+        D, L = load("../Data/Train.txt")    
+        (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
+        DN = Z_score(D)
+        (DNTR, LNTR), (DNTE, LNTE) = split_db_4to1(DN, L)
+        DN10 = compute_pca(10, DN)
+        (DNTR10, LNTR10), (DNTE10, LNTE10) = split_db_4to1(DN10, L)
+        DG = np.load("gaussianized_features.npy")
+        (DGTR, LGTR), (DGTE, LGTE) = split_db_4to1(DG, L)
+        l_val = [0, 1e-6, 1e-4, 1e-2, 1, 100]
+        pi_T = 0.5
+        pi = 0.5
+        Cfn = 1
+        Cfp = 1
+        k = 5
 
-    # print("\n\n BINARY LOGISTIC REGRESSION\n\n")
+        img1 = "LR_lambda_kfold.png"
+        img2 = "LR_lambda_single_split.png"
+        fileName = "../Results/LR_results.txt"
+        linear_or_quadratic = linear_logistic_regression
+        if LR_type == "quadratic":
+            fileName = "../Results/Quad_LR_results.txt"
+            linear_or_quadratic = quadratic_logistic_regression
+            img1 = "Quad_LR_lambda_kfold.png"
+            img2 = "Quad_LR_lambda_single_split.png"
 
-    D, L = load("../Data/Train.txt")  
-    (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
-    l_val = [0, 1e-6, 1e-3, 1]
-    pi_T = 0.5
-    pi = 0.5
-    Cfn = 1
-    Cfp = 1
-    k = 5
+        with open(fileName, "w") as f:
+            
+            f.write("**** min DCF for different Logistic Regression models ****\n\n")
+            
+            f.write("Values of min DCF for values of lambda = [0, 1e-6, 1e-4, 1e-2, 1, 100]\n")
+            f.write("\nRaw features\n")
+            DCF_kfold_raw = []
+            DCF_single_split_raw = []
+            for l in l_val:
+                minDCF = k_fold_cross_validation(D, L, linear_or_quadratic, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
+                DCF_kfold_raw.append(minDCF)
+                f.write("5-fold: " + str(minDCF))
+                _, minDCF = linear_or_quadratic(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp)
+                DCF_single_split_raw.append(minDCF)
+                f.write(" single split: " + str(minDCF) + "\n")
+            
+            f.write("\nZ-normalized features - no PCA\n")
+            DCF_kfold_z = []
+            DCF_single_split_z = []
+            for l in l_val:
+                minDCF = k_fold_cross_validation(DN, L, linear_or_quadratic, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
+                DCF_kfold_z.append(minDCF)
+                f.write("5-fold: " + str(minDCF))
+                _, minDCF = linear_or_quadratic(DNTR, LNTR, DNTE, LNTE, l, pi_T, pi, Cfn, Cfp)
+                DCF_single_split_z.append(minDCF)
+                f.write(" single split: " + str(minDCF) + "\n")
+            
+            f.write("\nZ-normalized features - PCA = 10\n")
+            DCF_kfold_z = []
+            DCF_single_split_z = []
+            for l in l_val:
+                minDCF = k_fold_cross_validation(DN10, L, linear_or_quadratic, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
+                DCF_kfold_z.append(minDCF)
+                f.write("5-fold: " + str(minDCF))
+                _, minDCF = linear_or_quadratic(DNTR10, LNTR10, DNTE10, LNTE10, l, pi_T, pi, Cfn, Cfp)
+                DCF_single_split_z.append(minDCF)
+                f.write(" single split: " + str(minDCF) + "\n")
+            
+            f.write("\nGaussianized features\n")
+            DCF_kfold_gau = []
+            DCF_single_split_gau = []
+            for l in l_val:
+                minDCF = k_fold_cross_validation(DG, L, linear_or_quadratic, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
+                DCF_kfold_gau.append(minDCF)
+                f.write("5-fold: " + str(minDCF))
+                _, minDCF = linear_or_quadratic(DGTR, LGTR, DGTE, LGTE, l, pi_T, pi, Cfn, Cfp)
+                DCF_single_split_gau.append(minDCF)
+                f.write(" single split: " + str(minDCF) + "\n")
+            
+            
+            plt.figure()
+            plt.plot(l_val, DCF_kfold_raw)
+            plt.plot(l_val, DCF_kfold_z)
+            plt.plot(l_val, DCF_kfold_gau)
+            plt.xscale("log")
+            plt.xlabel(r"$\lambda$")
+            plt.ylabel("min DCF")
+            plt.legend(["Raw", "Z-normalized", "Gaussianized"])
+            plt.savefig("../Images/" + img1)
 
-    for l in l_val:
-        lformat = "{:2e}".format(l)
-        print("\n************** Lambda: %s ***************" % lformat)
-        #minDCF = k_fold_cross_validation(D, L, binary_logistic_regression, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
-        _, minDCF = binary_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp)
-        print("\nmin DCF: %.4f\n" % (minDCF))
-
-
+            plt.figure()
+            plt.plot(l_val, DCF_single_split_raw)
+            plt.plot(l_val, DCF_single_split_z)
+            plt.plot(l_val, DCF_single_split_gau)
+            plt.xscale("log")
+            plt.xlabel(r"$\lambda$")
+            plt.ylabel("min DCF")
+            plt.legend(["Raw", "Z-normalized", "Gaussianized"])        
+            plt.savefig("../Images/" + img2)
+            

@@ -72,7 +72,7 @@ if __name__ == "__main__":
     #print_histograms(data_matrix, class_labels)
 
     # print scatter plots
-    # print_scatterplots(data_matrix, class_labels)
+    print_scatterplots(data_matrix, class_labels)
     print(data_matrix.mean(1))
     print(np.var(data_matrix, axis = 1))
     # subtract mean

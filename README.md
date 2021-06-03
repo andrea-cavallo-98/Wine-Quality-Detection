@@ -9,7 +9,7 @@
 * Support Vector Machines have quite a bad performance, find a way to improve them
 * GMM is the best performing model so far
 * LDA performs bad as a technique for classification
-* **Finish logistic regression**
+* Try PCA with logistic regression (?)
 * REMEMBER TO CHECK IF CENTERED FEATURES MAKE ANY DIFFERENCE!!:
     * for Gaussian models, no difference if features are z-normalized or not
 
