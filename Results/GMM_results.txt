@@ -1,0 +1,110 @@
+**** min DCF for different GMM models *****
+
+
+Tied: True
+
+Diag: False
+
+components: 2
+
+Z-norm: 0.31239804241435565
+
+Gaussianized: 0.300978792822186
+
+components: 4
+
+Z-norm: 0.31158238172920066
+
+Gaussianized: 0.30587275693311583
+
+components: 8
+
+Z-norm: 0.3140293637846656
+
+Gaussianized: 0.2920065252854812
+
+components: 16
+
+Z-norm: 0.299347471451876
+
+Gaussianized: 0.3017944535073409
+
+Diag: True
+
+components: 2
+
+Z-norm: 0.4290375203915171
+
+Gaussianized: 0.4363784665579119
+
+components: 4
+
+Z-norm: 0.3743882544861338
+
+Gaussianized: 0.3278955954323002
+
+components: 8
+
+Z-norm: 0.3164763458401305
+
+Gaussianized: 0.33197389885807504
+
+components: 16
+
+Z-norm: 0.3107667210440457
+
+Gaussianized: 0.31729200652528544
+
+Tied: False
+
+Diag: False
+
+components: 2
+
+Z-norm: 0.300978792822186
+
+Gaussianized: 0.3181076672104405
+
+components: 4
+
+Z-norm: 0.3066884176182708
+
+Gaussianized: 0.3066884176182708
+
+components: 8
+
+Z-norm: 0.28874388254486133
+
+Gaussianized: 0.2977161500815661
+
+components: 16
+
+Z-norm: 0.299347471451876
+
+Gaussianized: 0.32218597063621535
+
+Diag: True
+
+components: 2
+
+Z-norm: 0.4526916802610114
+
+Gaussianized: 0.42088091353996737
+
+components: 4
+
+Z-norm: 0.3507340946166395
+
+Gaussianized: 0.30505709624796085
+
+components: 8
+
+Z-norm: 0.3360522022838499
+
+Gaussianized: 0.3197389885807504
+
+components: 16
+
+Z-norm: 0.3181076672104405
+
+Gaussianized: 0.300978792822186
