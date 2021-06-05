@@ -9,9 +9,13 @@
 * Support Vector Machines have quite a bad performance, find a way to improve them
 * GMM is the best performing model so far
 * LDA performs bad as a technique for classification
-* Try PCA with logistic regression (?)
+* try to whiten covariance matrix (?)
+* for SVM, maybe try tuning hyperparameter csi?
+* quadratic kernel SVM are MUCH WORSE than quadratic logistic regression, WHY???
+* RBF kernel SVM works very well, maybe try more values of C and gamma if there is some time to waste :)
 * REMEMBER TO CHECK IF CENTERED FEATURES MAKE ANY DIFFERENCE!!:
     * for Gaussian models, no difference if features are z-normalized or not
+    * for Linear Regression, not very helpful
 
 
 

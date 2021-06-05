@@ -22,7 +22,7 @@ def print_scatterplots(data_matrix, class_labels):
                 plt.figure()
                 plt.xlabel(attribute1)
                 plt.ylabel(attribute2)
-                plt.title("Scatterplot distribution of attributes " + attribute1 + " and " + attribute2)
+                plt.title("Scatterplot distribution of attributes " + attribute1 +  r"$log \gamma = -2$" + attribute2)
                 for current_class_label in range(len(class_names)):
                     mask = (class_labels == current_class_label)
                     plt.scatter(data_matrix[i,mask], data_matrix[j,mask])
@@ -51,10 +51,10 @@ if __name__ == "__main__":
 
     # load the dataset
     data_matrix, class_labels = load("../Data/Train.txt")
-    """
+    
     print("*********** Some statistics about the dataset **************")
     print("Bad quality samples: %d, Good quality samples: %d" % (sum(class_labels == 0), sum(class_labels == 1)))
-
+    """
     gauss_feat = np.load("gaussianized_features.npy")
     feat_heatmap(gauss_feat)
     feat_heatmap(gauss_feat[:, class_labels == 0])
@@ -67,10 +67,10 @@ if __name__ == "__main__":
     # np.save("gaussianized_features.npy", gauss_feat)
     """
 
-
+    """
     # print histograms 
     #print_histograms(data_matrix, class_labels)
-
+    """
     # print scatter plots
     print_scatterplots(data_matrix, class_labels)
     print(data_matrix.mean(1))

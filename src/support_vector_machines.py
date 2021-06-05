@@ -2,6 +2,10 @@
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_4to1
+from prediction_measurement import min_DCF
+from data_visualization import Z_score
+import matplotlib.pyplot as plt
+from pca import compute_pca
 
 
 def obj_function_gradient_wrapper(H_hat):
@@ -29,12 +33,11 @@ def kernel(x1, x2, type, d = 0, c = 0, gamma = 0, csi = 0):
             return 0
 
 
-def linear_SVM(DTR, LTR, DTE, LTE, C, K):
+def linear_SVM(DTR, LTR, DTE, LTE, C, K, pi, Cfp, Cfn, pi_T, rebalancing = True):
     
     D_hat = np.concatenate((DTR, K * np.array(np.ones([1, DTR.shape[1]]))))
     
     # Compute H_hat
-
     Z = np.ones(LTR.shape)
     Z[LTR == 0] = -1
     ZiZj = np.dot(Z.reshape([Z.shape[0], 1]), Z.reshape([Z.shape[0], 1]).T)
@@ -43,9 +46,16 @@ def linear_SVM(DTR, LTR, DTE, LTE, C, K):
     # Optimize the objective function
     obj_function_gradient = obj_function_gradient_wrapper(H_hat)
     B = np.zeros([DTR.shape[1], 2])
-    B[:, 1] = C
-    optAlpha, dual_obj, _ = fmin_l_bfgs_b(obj_function_gradient, np.zeros(DTR.shape[1]),
-                                        approx_grad = False, bounds = B, factr = 1.0)
+    if rebalancing:
+        pi_T_emp = sum(LTR == 1) / DTR.shape[1]
+        Ct = C * pi_T / pi_T_emp
+        Cf = C * (1 - pi_T) / (1 - pi_T_emp)
+        B[LTR == 1, 1] = Ct
+        B[LTR == 0, 1] = Cf
+    else:
+        B[:, 1] = C
+    optAlpha, _, _ = fmin_l_bfgs_b(obj_function_gradient, np.zeros(DTR.shape[1]),
+                                        approx_grad = False, bounds = B, factr = 10000.0)
 
     # Recover primal solution
     w_hat = np.sum(optAlpha * Z * D_hat, axis = 1)
@@ -55,21 +65,13 @@ def linear_SVM(DTR, LTR, DTE, LTE, C, K):
     
     # Compute scores, predictions and accuracy
     S = np.dot(w_hat.T, T_hat)
-    PredictedLabels = np.zeros(DTE.shape[1])
-    t = 0.0
-    PredictedLabels[S >= t] = 1
-    acc = sum(PredictedLabels == LTE) / LTE.shape[0]
     
-    # Compute duality gap
-    obj = 1 - Z * np.dot(w_hat.T, D_hat)
-    obj[obj < 0.0] = 0.0
-    primal_obj = 1/2 * (w_hat*w_hat).sum() + C * sum(obj)
-    gap = primal_obj + dual_obj 
+    minDCF = min_DCF(S, pi, Cfn, Cfp, LTE)
 
-    return primal_obj, abs(dual_obj), abs(gap), 1 - acc
+    return S, minDCF
 
 
-def kernel_SVM(DTR, LTR, DTE, LTE, C, type, d = 0, c = 0, gamma = 0, csi = 0):
+def kernel_SVM(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, d = 0, c = 0, gamma = 0, csi = 0, rebalancing = True):
         
     # Compute H_hat
     Z = np.ones(LTR.shape)
@@ -80,79 +82,297 @@ def kernel_SVM(DTR, LTR, DTE, LTE, C, type, d = 0, c = 0, gamma = 0, csi = 0):
     # Optimize the objective function
     obj_function_gradient = obj_function_gradient_wrapper(H_hat)
     B = np.zeros([DTR.shape[1], 2])
-    B[:, 1] = C
-    optAlpha, dual_obj, _ = fmin_l_bfgs_b(obj_function_gradient, np.zeros(DTR.shape[1]),
-                                        approx_grad = False, bounds = B, factr = 1.0)
+    if rebalancing:
+        pi_T_emp = sum(LTR == 1) / DTR.shape[1]
+        Ct = C * pi_T / pi_T_emp
+        Cf = C * (1 - pi_T) / (1 - pi_T_emp)
+        B[LTR == 1, 1] = Ct
+        B[LTR == 0, 1] = Cf
+    else:
+        B[:, 1] = C
+    optAlpha, _, _ = fmin_l_bfgs_b(obj_function_gradient, np.zeros(DTR.shape[1]),
+                                        approx_grad = False, bounds = B, factr = 10000.0)
     
     # Compute scores, predictions and accuracy
     S = np.sum((optAlpha * Z).reshape([DTR.shape[1], 1]) * kernel(DTR, DTE, type, d, c, gamma, csi), axis = 0)
-    PredictedLabels = np.zeros(DTE.shape[1])
-    t = 0.0
-    PredictedLabels[S >= t] = 1
-    acc = sum(PredictedLabels == LTE) / LTE.shape[0]
 
-    return abs(dual_obj), 1 - acc
+    minDCF = min_DCF(S, pi, Cfn, Cfp, LTE)
+
+    return S, minDCF
+
+
+def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = True, gamma = 0, seed = 0, type = ""):
+
+    np.random.seed(seed)
+    idx = np.random.permutation(D.shape[1])
+
+    start_index = 0
+    elements = int(D.shape[1] / k)
+
+    llr = np.zeros([D.shape[1], ])
+
+    for count in range(k):
+
+        if start_index + elements > D.shape[1]:
+            end_index = D.shape[1]
+        else:
+            end_index = start_index + elements 
+
+        idxTrain = np.concatenate((idx[0:start_index], idx[end_index:]))
+        idxTest = idx[start_index:end_index]
+
+        DTR = D[:, idxTrain]
+        LTR = L[idxTrain]
+    
+        DTE = D[:, idxTest]
+        LTE = L[idxTest]
+
+        if type == "": # linear SVM
+            llr[idxTest], _ = classifier(DTR, LTR, DTE, LTE, C, K_SVM, pi, Cfp, Cfn, pi_T, rebalancing)
+        else: # kernel SVM
+            llr[idxTest], _ = classifier(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, gamma=gamma, rebalancing=rebalancing, d = 2)
+
+        start_index += elements
+
+    minDCF = min_DCF(llr, pi, Cfn, Cfp, L)
+
+    return minDCF
+
+
 
 
 if __name__ == "__main__":
 
-    D, L = load("../Data/Train.txt")  
+    D, L = load("../Data/Train.txt")    
     (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
-
-
-    """
-    Linear SVM applied to a binary task
-    """
-
-    Kval = [1, 10]
-    Cval = [0.1, 1.0, 10.0]
-
-    print("\n K        C          Primal Loss        Dual Loss        Duality Gap      Error rate  \n")
-
-    for K in Kval:
-        for C in Cval:
-            primal_obj, dual_obj, gap, err = linear_SVM(DTR, LTR, DTE, LTE, C, K)
-            primalJformat = "{:6e}".format(primal_obj)
-            dualJformat = "{:6e}".format(dual_obj)
-            gapformat = "{:6e}".format(gap)
-
-            print("%2d       %4.1f        %s      %s      %s      %.4f" % (K, C, primalJformat, dualJformat, gapformat, err))
-
-    print("\n")
-
+    DN = Z_score(D)
+    (DNTR, LNTR), (DNTE, LNTE) = split_db_4to1(DN, L)
+    DG = np.load("gaussianized_features.npy")
+    (DGTR, LGTR), (DGTE, LGTE) = split_db_4to1(DG, L)
+    C_val = [1e-1, 1, 10]
+    pi_T = 0.5
+    pi = 0.5
+    Cfn = 1
+    Cfp = 1
+    k = 5
+    K_SVM = 1
 
     """
-    Kernel SVM applied to binary task
+    LINEAR SVM
+    """
+    """
+    img1_val = ["SVM_C_kfold_nobal.png", "SVM_C_kfold_bal.png"]
+    img2_val = ["SVM_C_single_split_nobal.png", "SVM_C_single_split_bal.png"]
+    fileName = "../Results/linear_SVM_results.txt"
+    linear_or_quadratic = linear_SVM
+    doRebalancing = True
+    with open(fileName, "w") as f:
+        
+        f.write("**** min DCF for different linear SVM models ****\n\n")
+        f.write("Values of min DCF for values of C = [0, 1e-1, 1, 10]\n")
+
+        for i, doRebalancing in enumerate([False, True]):
+
+            f.write("\n Rebalancing: " + str(doRebalancing) + "\n")
+
+            f.write("\nRaw features\n")
+            DCF_kfold_raw = []
+            DCF_single_split_raw = []
+            for C in C_val:
+                minDCF = k_fold_cross_validation(D, L, linear_or_quadratic, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = doRebalancing, seed = 0)
+                DCF_kfold_raw.append(minDCF)
+                f.write("5-fold: " + str(minDCF))
+                _, minDCF = linear_or_quadratic(DTR, LTR, DTE, LTE, C, K_SVM, pi, Cfp, Cfn, pi_T, rebalancing = doRebalancing)
+                DCF_single_split_raw.append(minDCF)
+                f.write(" single split: " + str(minDCF) + "\n")
+            
+            print("Finished raw features")
+
+            f.write("\nZ-normalized features - no PCA\n")
+            DCF_kfold_z = []
+            DCF_single_split_z = []
+            for C in C_val:
+                minDCF = k_fold_cross_validation(DN, L, linear_or_quadratic, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = doRebalancing, seed = 0)
+                DCF_kfold_z.append(minDCF)
+                f.write("5-fold: " + str(minDCF))
+                _, minDCF = linear_or_quadratic(DNTR, LNTR, DNTE, LNTE, C, K_SVM, pi, Cfp, Cfn, pi_T, rebalancing = doRebalancing)
+                DCF_single_split_z.append(minDCF)
+                f.write(" single split: " + str(minDCF) + "\n")
+            
+            print("Finished Z-normalized features")
+
+            f.write("\nGaussianized features\n")
+            DCF_kfold_gau = []
+            DCF_single_split_gau = []
+            for C in C_val:
+                minDCF = k_fold_cross_validation(DG, L, linear_or_quadratic, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = doRebalancing, seed = 0)
+                DCF_kfold_gau.append(minDCF)
+                f.write("5-fold: " + str(minDCF))
+                _, minDCF = linear_or_quadratic(DGTR, LGTR, DGTE, LGTE, C, K_SVM, pi, Cfp, Cfn, pi_T, rebalancing = doRebalancing)
+                DCF_single_split_gau.append(minDCF)
+                f.write(" single split: " + str(minDCF) + "\n")
+            
+            print("Finished Gaussianized features")
+
+            img1 = img1_val[i]
+            img2 = img2_val[i]
+
+            plt.figure()
+            plt.plot(C_val, DCF_kfold_raw)
+            plt.plot(C_val, DCF_kfold_z)
+            plt.plot(C_val, DCF_kfold_gau)
+            plt.xscale("log")
+            plt.xlabel(r"$\lambda$")
+            plt.ylabel("min DCF")
+            plt.legend(["Raw", "Z-normalized", "Gaussianized"])
+            plt.savefig("../Images/" + img1)
+
+            plt.figure()
+            plt.plot(C_val, DCF_single_split_raw)
+            plt.plot(C_val, DCF_single_split_z)
+            plt.plot(C_val, DCF_single_split_gau)
+            plt.xscale("log")
+            plt.xlabel(r"$\lambda$")
+            plt.ylabel("min DCF")
+            plt.legend(["Raw", "Z-normalized", "Gaussianized"])        
+            plt.savefig("../Images/" + img2)
+
+    """
+    """
+    QUADRATIC KERNEL SVM
+    """
+    """
+    fileName = "../Results/quad_SVM_results.txt"
+    with open(fileName, "w") as f:
+        
+        f.write("**** min DCF for different quadratic kernel SVM models ****\n\n")
+        f.write("Values of min DCF for values of C = [1e-1, 1, 10]\n")
+
+        f.write("\nZ-normalized features - no PCA - no rebalancing\n")
+        DCF_kfold_z_nobal = []
+        DCF_single_split_z_nobal = []
+        for C in C_val:
+            minDCF = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = False, type = "poly")
+            DCF_kfold_z_nobal.append(minDCF)
+            f.write("5-fold: " + str(minDCF))
+            _, minDCF = kernel_SVM(DNTR, LNTR, DNTE, LNTE, C, "poly", pi, Cfn, Cfp, pi_T, d = 2, csi = K_SVM**0.5, rebalancing = False)
+            DCF_single_split_z_nobal.append(minDCF)
+            f.write(" single split: " + str(minDCF) + "\n")
+        
+        print("Finished Z-normalized features - no rebalancing")
+
+        f.write("\nZ-normalized features - no PCA - rebalancing\n")
+        DCF_kfold_z_bal = []
+        DCF_single_split_z_bal = []
+        for C in C_val:
+            minDCF = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = True, type = "poly")
+            DCF_kfold_z_bal.append(minDCF)
+            f.write("5-fold: " + str(minDCF))
+            _, minDCF = kernel_SVM(DNTR, LNTR, DNTE, LNTE, C, "poly", pi, Cfn, Cfp, pi_T, d = 2, csi = K_SVM**0.5, rebalancing = True)
+            DCF_single_split_z_bal.append(minDCF)
+            f.write(" single split: " + str(minDCF) + "\n")
+        
+        print("Finished Z-normalized features - rebalancing")
+
+        img1 = "quad_SVM_C_kfold.png"
+        img2 = "quad_SVM_C_single_split.png"
+
+        plt.figure()
+        plt.plot(C_val, DCF_kfold_z_nobal)
+        plt.plot(C_val, DCF_kfold_z_bal)
+        plt.xscale("log")
+        plt.xlabel(r"$\lambda$")
+        plt.ylabel("min DCF")
+        plt.legend(["No balancing", "Balancing"])
+        plt.savefig("../Images/" + img1)
+
+        plt.figure()
+        plt.plot(C_val, DCF_single_split_z_nobal)
+        plt.plot(C_val, DCF_single_split_z_bal)
+        plt.xscale("log")
+        plt.xlabel(r"$\lambda$")
+        plt.ylabel("min DCF")
+        plt.legend(["No balancing", "Balancing"])
+        plt.savefig("../Images/" + img2)
+    """
+    """
+    RBF KERNEL SVM
     """
 
-    csival = [0.0, 1.0]
-    C = 1.0
-    kernel_type_val = ["poly", "RBF"]
-    d = 2
-    cval = [0, 1]
-    gamma_val = [1.0, 10.0]
+    fileName = "../Results/RBF_SVM_results.txt"
+    gamma_val = [np.exp(-1), np.exp(-2)]
 
-    print("\ncsi        C             Kernel                 Dual Loss      Error rate  \n")
+    with open(fileName, "w") as f:
 
-    for kernel_type in kernel_type_val:
-        if (kernel_type == "poly"):
-            for c in cval:
-                for csi in csival:
-                    dual_obj, err = kernel_SVM(DTR, LTR, DTE, LTE, C, kernel_type, d = d, c = c, csi = csi)
-                    dualJformat = "{:6e}".format(dual_obj)
-                    kernel_type_string = kernel_type + " (d = " + str(d) + ", c = " + str(c) + ")"
-                    print("%.1f       %.1f        %s      %s      %.4f" % (csi, C, "{:<20}".format(kernel_type_string), dualJformat, err))
+        DCF_kfold_z_nobal = np.zeros([len(gamma_val), len(C_val)])
+        DCF_kfold_z_bal = np.zeros([len(gamma_val), len(C_val)])
+        DCF_single_split_z_nobal = np.zeros([len(gamma_val), len(C_val)])
+        DCF_single_split_z_bal = np.zeros([len(gamma_val), len(C_val)])
 
-        else:
-            for csi in csival:
-                for gamma in gamma_val:
-                    dual_obj, err = kernel_SVM(DTR, LTR, DTE, LTE, C, kernel_type, gamma = gamma, csi = csi)
-                    dualJformat = "{:6e}".format(dual_obj)
-                    kernel_type_string = kernel_type + " (gamma = " + str(gamma) + ")  "
-                    print("%.1f       %.1f        %s      %s      %.4f" % (csi, C, "{:<20}".format(kernel_type_string), dualJformat, err))
+        for i, gamma in enumerate(gamma_val):
+            f.write("**** min DCF for different quadratic kernel SVM models ****\n\n")
+            f.write("Values of min DCF for values of C = [1e-1, 1, 10]\n")
 
-    print("\n")
+            f.write("\nZ-normalized features - no PCA - no rebalancing\n")
+            for j,C in enumerate(C_val):
+                minDCF = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = False, type = "RBF", gamma = gamma)
+                DCF_kfold_z_nobal[i, j] = (minDCF)
+                f.write("5-fold: " + str(minDCF))
+                _, minDCF = kernel_SVM(DNTR, LNTR, DNTE, LNTE, C, "RBF", pi, Cfn, Cfp, pi_T, gamma = gamma, csi = K_SVM**0.5, rebalancing = False)
+                DCF_single_split_z_nobal[i,j] = (minDCF)
+                f.write(" single split: " + str(minDCF) + "\n")
+            
+            print("Finished Z-normalized features - no rebalancing")
 
+            f.write("\nZ-normalized features - no PCA - rebalancing\n")
+            for C in C_val:
+                minDCF = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = True, type = "RBF", gamma = gamma)
+                DCF_kfold_z_bal[i,j] = minDCF
+                f.write("5-fold: " + str(minDCF))
+                _, minDCF = kernel_SVM(DNTR, LNTR, DNTE, LNTE, C, "RBF", pi, Cfn, Cfp, pi_T, gamma = gamma, csi = K_SVM**0.5, rebalancing = True)
+                DCF_single_split_z_bal[i,j] = minDCF
+                f.write(" single split: " + str(minDCF) + "\n")
+            
+            print("Finished Z-normalized features - rebalancing")
 
+        img1 = "RBF_SVM_C_kfold_bal.png"
+        img2 = "RBF_SVM_C_single_split_bal.png"
+        img3 = "RBF_SVM_C_kfold_nobal.png"
+        img4 = "RBF_SVM_C_single_split_nobal.png"
 
+        plt.figure()
+        plt.plot(C_val, DCF_kfold_z_bal[0,:])
+        plt.plot(C_val, DCF_kfold_z_bal[1,:])
+        plt.xscale("log")
+        plt.xlabel("C")
+        plt.ylabel("min DCF")
+        plt.legend([r"$log \gamma = -1$", r"$log \gamma = -2$"])
+        plt.savefig("../Images/" + img1)
+
+        plt.figure()
+        plt.plot(C_val, DCF_single_split_z_bal[0,:])
+        plt.plot(C_val, DCF_single_split_z_bal[1,:])
+        plt.xscale("log")
+        plt.xlabel("C")
+        plt.ylabel("min DCF")
+        plt.legend([r"$log \gamma = -1$", r"$log \gamma = -2$"])
+        plt.savefig("../Images/" + img2)
+
+        plt.figure()
+        plt.plot(C_val, DCF_kfold_z_nobal[0,:])
+        plt.plot(C_val, DCF_kfold_z_nobal[1,:])
+        plt.xscale("log")
+        plt.xlabel("C")
+        plt.ylabel("min DCF")
+        plt.legend([r"$log \gamma = -1$", r"$log \gamma = -2$"])
+        plt.savefig("../Images/" + img1)
+
+        plt.figure()
+        plt.plot(C_val, DCF_single_split_z_nobal[0,:])
+        plt.plot(C_val, DCF_single_split_z_nobal[1,:])
+        plt.xscale("log")
+        plt.xlabel("C")
+        plt.ylabel("min DCF")
+        plt.legend([r"$log \gamma = -1$", r"$log \gamma = -2$"])
+        plt.savefig("../Images/" + img2)
 
