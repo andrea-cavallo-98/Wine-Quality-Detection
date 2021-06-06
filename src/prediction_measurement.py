@@ -37,11 +37,19 @@ def Bayes_risk(M, pi, Cfn, Cfp):
     return DCFu, DCF
 
 
+def act_DCF(llr, pi, Cfn, Cfp, true_labels):
+    opt_decisions = optimal_Bayes_decisions(llr, pi, Cfn, Cfp)
+    M = confusion_matrix(true_labels, opt_decisions, 2)
+    _, DCF = Bayes_risk(M, pi, Cfn, Cfp)
+    return DCF
+
+
 def min_DCF(llr, pi, Cfn, Cfp, true_labels):
 
     possible_t = np.concatenate((np.array([min(llr) - 0.1]), (np.unique(llr)), np.array([max(llr) + 0.1])))
 
     minDCF = 10
+    opt_t = 0
 
     for t in possible_t:
         PredictedLabels = np.zeros([llr.shape[0]])
@@ -50,8 +58,9 @@ def min_DCF(llr, pi, Cfn, Cfp, true_labels):
         _, DCF = Bayes_risk(M, pi, Cfn, Cfp)
         if DCF < minDCF:
             minDCF = DCF
+            opt_t = t
 
-    return minDCF
+    return minDCF, opt_t
 
 
 def ROC_curve(llr, true_labels):

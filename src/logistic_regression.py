@@ -42,7 +42,7 @@ def linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp):
     # Compute scores
     s = np.dot(w.T, DTE) + b
 
-    minDCF = min_DCF(s, pi, Cfn, Cfp, LTE)
+    minDCF, _ = min_DCF(s, pi, Cfn, Cfp, LTE)
 
     return s, minDCF
 
@@ -72,12 +72,12 @@ def quadratic_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp):
     # Compute scores
     s = np.dot(w.T, phi_test) + b
 
-    minDCF = min_DCF(s, pi, Cfn, Cfp, LTE)
+    minDCF, _ = min_DCF(s, pi, Cfn, Cfp, LTE)
 
     return s, minDCF
 
 
-def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, l, pi_T, seed = 0):
+def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, l, pi_T, seed = 0, just_llr = False):
 
     np.random.seed(seed)
     idx = np.random.permutation(D.shape[1])
@@ -106,9 +106,12 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, l, pi_T, seed = 0
         llr[idxTest], _ = classifier(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp)
         start_index += elements
 
-    minDCF = min_DCF(llr, pi, Cfn, Cfp, L)
+    if just_llr:
+        minDCF = 0
+    else:
+        minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, L)
 
-    return minDCF
+    return minDCF, llr
 
 
 
@@ -149,7 +152,7 @@ if __name__ == "__main__":
             DCF_kfold_raw = []
             DCF_single_split_raw = []
             for l in l_val:
-                minDCF = k_fold_cross_validation(D, L, linear_or_quadratic, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
+                minDCF, _ = k_fold_cross_validation(D, L, linear_or_quadratic, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
                 DCF_kfold_raw.append(minDCF)
                 f.write("5-fold: " + str(minDCF))
                 _, minDCF = linear_or_quadratic(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp)
@@ -160,7 +163,7 @@ if __name__ == "__main__":
             DCF_kfold_z = []
             DCF_single_split_z = []
             for l in l_val:
-                minDCF = k_fold_cross_validation(DN, L, linear_or_quadratic, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
+                minDCF, _ = k_fold_cross_validation(DN, L, linear_or_quadratic, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
                 DCF_kfold_z.append(minDCF)
                 f.write("5-fold: " + str(minDCF))
                 _, minDCF = linear_or_quadratic(DNTR, LNTR, DNTE, LNTE, l, pi_T, pi, Cfn, Cfp)
@@ -171,7 +174,7 @@ if __name__ == "__main__":
             DCF_kfold_z = []
             DCF_single_split_z = []
             for l in l_val:
-                minDCF = k_fold_cross_validation(DN10, L, linear_or_quadratic, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
+                minDCF, _ = k_fold_cross_validation(DN10, L, linear_or_quadratic, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
                 DCF_kfold_z.append(minDCF)
                 f.write("5-fold: " + str(minDCF))
                 _, minDCF = linear_or_quadratic(DNTR10, LNTR10, DNTE10, LNTE10, l, pi_T, pi, Cfn, Cfp)
@@ -182,7 +185,7 @@ if __name__ == "__main__":
             DCF_kfold_gau = []
             DCF_single_split_gau = []
             for l in l_val:
-                minDCF = k_fold_cross_validation(DG, L, linear_or_quadratic, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
+                minDCF, _ = k_fold_cross_validation(DG, L, linear_or_quadratic, k, pi, Cfp, Cfn, l, pi_T, seed = 0)
                 DCF_kfold_gau.append(minDCF)
                 f.write("5-fold: " + str(minDCF))
                 _, minDCF = linear_or_quadratic(DGTR, LGTR, DGTE, LGTE, l, pi_T, pi, Cfn, Cfp)

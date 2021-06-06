@@ -65,7 +65,7 @@ def MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs = True):
         SPost = SJoint / SJoint.sum(axis = 0)
 
     llr = compute_llr(SPost)
-    minDCF = min_DCF(llr, pi, Cfn, Cfp, LTE)
+    minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
     return llr, minDCF
 
 
@@ -104,7 +104,7 @@ def naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs = True):
         SPost = SJoint / SJoint.sum(axis = 0)
 
     llr = compute_llr(SPost)
-    minDCF = min_DCF(llr, pi, Cfn, Cfp, LTE)
+    minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
     return llr, minDCF
 
 
@@ -146,7 +146,7 @@ def tied_MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs = True):
         SPost = SJoint / SJoint.sum(axis = 0)
 
     llr = compute_llr(SPost)
-    minDCF = min_DCF(llr, pi, Cfn, Cfp, LTE)
+    minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
     return llr, minDCF
 
 
@@ -187,7 +187,7 @@ def tied_naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs = True):
         SPost = SJoint / SJoint.sum(axis = 0)
 
     llr = compute_llr(SPost)
-    minDCF = min_DCF(llr, pi, Cfn, Cfp, LTE)
+    minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
     return llr, minDCF
 
 
@@ -220,7 +220,7 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, seed = 0):
         llr[idxTest], _ = classifier(DTR, LTR, DTE, LTE, pi, Cfn, Cfp)
         start_index += elements
 
-    minDCF = min_DCF(llr, pi, Cfn, Cfp, L)
+    minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, L)
 
     return minDCF
 

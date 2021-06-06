@@ -28,14 +28,26 @@ def load(fileName):
 
 
 def split_db_4to1(D, L, seed=0):
-    nTrain = int(D.shape[1]*4.0/5.0)
     np.random.seed(seed)
-    idx = np.random.permutation(D.shape[1])
+
+    if(D.shape[1] == 1):
+        nTrain = int(D.shape[0]*4.0/5.0)
+        idx = np.random.permutation(D.shape[0])
+    else:    
+        nTrain = int(D.shape[1]*4.0/5.0)
+        idx = np.random.permutation(D.shape[1])
+    
     idxTrain = idx[0:nTrain]
     idxTest = idx[nTrain:]
-    DTR = D[:, idxTrain]
-    DTE = D[:, idxTest]
+
+    if(D.shape[1] == 1):
+        DTR = D[idxTrain]
+        DTE = D[idxTest]
+    else:
+        DTR = D[:, idxTrain]
+        DTE = D[:, idxTest]
     LTR = L[idxTrain]
     LTE = L[idxTest]
+
     return (DTR, LTR), (DTE, LTE)
 

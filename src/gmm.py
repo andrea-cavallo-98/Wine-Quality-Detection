@@ -115,7 +115,7 @@ def GMM_classifier(DTR, LTR, DTE, LTE, n_classes, components, pi, Cfn, Cfp, diag
         S[c, :] = logdens
     
     llr = compute_llr(S)
-    minDCF = min_DCF(llr, pi, Cfn, Cfp, LTE)
+    minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
     return llr, minDCF
 
 
@@ -150,7 +150,7 @@ def k_fold_cross_validation(D, L, k, pi, Cfp, Cfn, diag, tied, components, seed 
         llr[idxTest], _ = GMM_classifier(DTR, LTR, DTE, LTE, 2, components, pi, Cfn, Cfp, diag, tied)
         start_index += elements
 
-    minDCF = min_DCF(llr, pi, Cfn, Cfp, L)
+    minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, L)
 
     return minDCF
 

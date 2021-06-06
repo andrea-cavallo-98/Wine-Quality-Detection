@@ -66,12 +66,12 @@ def linear_SVM(DTR, LTR, DTE, LTE, C, K, pi, Cfp, Cfn, pi_T, rebalancing = True)
     # Compute scores, predictions and accuracy
     S = np.dot(w_hat.T, T_hat)
     
-    minDCF = min_DCF(S, pi, Cfn, Cfp, LTE)
+    minDCF, _ = min_DCF(S, pi, Cfn, Cfp, LTE)
 
     return S, minDCF
 
 
-def kernel_SVM(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, d = 0, c = 0, gamma = 0, csi = 0, rebalancing = True):
+def kernel_SVM(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, d = 0, c = 0, gamma = 0, csi = 0, rebalancing = True, store_model = False):
         
     # Compute H_hat
     Z = np.ones(LTR.shape)
@@ -92,16 +92,20 @@ def kernel_SVM(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, d = 0, c = 0, ga
         B[:, 1] = C
     optAlpha, _, _ = fmin_l_bfgs_b(obj_function_gradient, np.zeros(DTR.shape[1]),
                                         approx_grad = False, bounds = B, factr = 10000.0)
-    
+
+    if store_model:
+        np.save("SVM_alpha.npy", optAlpha)
+
     # Compute scores, predictions and accuracy
     S = np.sum((optAlpha * Z).reshape([DTR.shape[1], 1]) * kernel(DTR, DTE, type, d, c, gamma, csi), axis = 0)
 
-    minDCF = min_DCF(S, pi, Cfn, Cfp, LTE)
+    minDCF, _ = min_DCF(S, pi, Cfn, Cfp, LTE)
 
     return S, minDCF
 
 
-def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = True, gamma = 0, seed = 0, type = ""):
+def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = True, 
+                            gamma = 0, seed = 0, type = "", just_llr = False, store_model = False):
 
     np.random.seed(seed)
     idx = np.random.permutation(D.shape[1])
@@ -130,13 +134,17 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, C, pi_T, K_SVM, r
         if type == "": # linear SVM
             llr[idxTest], _ = classifier(DTR, LTR, DTE, LTE, C, K_SVM, pi, Cfp, Cfn, pi_T, rebalancing)
         else: # kernel SVM
-            llr[idxTest], _ = classifier(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, gamma=gamma, rebalancing=rebalancing, d = 2)
+            llr[idxTest], _ = classifier(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, gamma=gamma,
+                                     rebalancing=rebalancing, d = 2, csi=K_SVM**0.5, c = 1, store_model=store_model)
 
         start_index += elements
 
-    minDCF = min_DCF(llr, pi, Cfn, Cfp, L)
+    if just_llr:
+        minDCF = 0
+    else:
+        minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, L)
 
-    return minDCF
+    return minDCF, llr
 
 
 
@@ -179,7 +187,7 @@ if __name__ == "__main__":
             DCF_kfold_raw = []
             DCF_single_split_raw = []
             for C in C_val:
-                minDCF = k_fold_cross_validation(D, L, linear_or_quadratic, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = doRebalancing, seed = 0)
+                minDCF, _ = k_fold_cross_validation(D, L, linear_or_quadratic, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = doRebalancing, seed = 0)
                 DCF_kfold_raw.append(minDCF)
                 f.write("5-fold: " + str(minDCF))
                 _, minDCF = linear_or_quadratic(DTR, LTR, DTE, LTE, C, K_SVM, pi, Cfp, Cfn, pi_T, rebalancing = doRebalancing)
@@ -192,7 +200,7 @@ if __name__ == "__main__":
             DCF_kfold_z = []
             DCF_single_split_z = []
             for C in C_val:
-                minDCF = k_fold_cross_validation(DN, L, linear_or_quadratic, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = doRebalancing, seed = 0)
+                minDCF, _ = k_fold_cross_validation(DN, L, linear_or_quadratic, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = doRebalancing, seed = 0)
                 DCF_kfold_z.append(minDCF)
                 f.write("5-fold: " + str(minDCF))
                 _, minDCF = linear_or_quadratic(DNTR, LNTR, DNTE, LNTE, C, K_SVM, pi, Cfp, Cfn, pi_T, rebalancing = doRebalancing)
@@ -205,7 +213,7 @@ if __name__ == "__main__":
             DCF_kfold_gau = []
             DCF_single_split_gau = []
             for C in C_val:
-                minDCF = k_fold_cross_validation(DG, L, linear_or_quadratic, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = doRebalancing, seed = 0)
+                minDCF, _ = k_fold_cross_validation(DG, L, linear_or_quadratic, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = doRebalancing, seed = 0)
                 DCF_kfold_gau.append(minDCF)
                 f.write("5-fold: " + str(minDCF))
                 _, minDCF = linear_or_quadratic(DGTR, LGTR, DGTE, LGTE, C, K_SVM, pi, Cfp, Cfn, pi_T, rebalancing = doRebalancing)
@@ -252,10 +260,10 @@ if __name__ == "__main__":
         DCF_kfold_z_nobal = []
         DCF_single_split_z_nobal = []
         for C in C_val:
-            minDCF = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = False, type = "poly")
+            minDCF, _ = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = False, type = "poly")
             DCF_kfold_z_nobal.append(minDCF)
             f.write("5-fold: " + str(minDCF))
-            _, minDCF = kernel_SVM(DNTR, LNTR, DNTE, LNTE, C, "poly", pi, Cfn, Cfp, pi_T, d = 2, csi = K_SVM**0.5, rebalancing = False)
+            _, minDCF = kernel_SVM(DNTR, LNTR, DNTE, LNTE, C, "poly", pi, Cfn, Cfp, pi_T, d = 2, csi = K_SVM**0.5, rebalancing = False, c=1)
             DCF_single_split_z_nobal.append(minDCF)
             f.write(" single split: " + str(minDCF) + "\n")
         
@@ -265,7 +273,7 @@ if __name__ == "__main__":
         DCF_kfold_z_bal = []
         DCF_single_split_z_bal = []
         for C in C_val:
-            minDCF = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = True, type = "poly")
+            minDCF, _ = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = True, type = "poly")
             DCF_kfold_z_bal.append(minDCF)
             f.write("5-fold: " + str(minDCF))
             _, minDCF = kernel_SVM(DNTR, LNTR, DNTE, LNTE, C, "poly", pi, Cfn, Cfp, pi_T, d = 2, csi = K_SVM**0.5, rebalancing = True)
@@ -294,11 +302,12 @@ if __name__ == "__main__":
         plt.ylabel("min DCF")
         plt.legend(["No balancing", "Balancing"])
         plt.savefig("../Images/" + img2)
+    
     """
     """
     RBF KERNEL SVM
     """
-
+    """
     fileName = "../Results/RBF_SVM_results.txt"
     gamma_val = [np.exp(-1), np.exp(-2)]
 
@@ -315,7 +324,7 @@ if __name__ == "__main__":
 
             f.write("\nZ-normalized features - no PCA - no rebalancing\n")
             for j,C in enumerate(C_val):
-                minDCF = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = False, type = "RBF", gamma = gamma)
+                minDCF, _ = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = False, type = "RBF", gamma = gamma)
                 DCF_kfold_z_nobal[i, j] = (minDCF)
                 f.write("5-fold: " + str(minDCF))
                 _, minDCF = kernel_SVM(DNTR, LNTR, DNTE, LNTE, C, "RBF", pi, Cfn, Cfp, pi_T, gamma = gamma, csi = K_SVM**0.5, rebalancing = False)
@@ -326,7 +335,7 @@ if __name__ == "__main__":
 
             f.write("\nZ-normalized features - no PCA - rebalancing\n")
             for C in C_val:
-                minDCF = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = True, type = "RBF", gamma = gamma)
+                minDCF, _ = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = True, type = "RBF", gamma = gamma)
                 DCF_kfold_z_bal[i,j] = minDCF
                 f.write("5-fold: " + str(minDCF))
                 _, minDCF = kernel_SVM(DNTR, LNTR, DNTE, LNTE, C, "RBF", pi, Cfn, Cfp, pi_T, gamma = gamma, csi = K_SVM**0.5, rebalancing = True)
@@ -375,4 +384,4 @@ if __name__ == "__main__":
         plt.ylabel("min DCF")
         plt.legend([r"$log \gamma = -1$", r"$log \gamma = -2$"])
         plt.savefig("../Images/" + img2)
-
+        """
