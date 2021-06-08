@@ -6,6 +6,7 @@ from prediction_measurement import act_DCF, min_DCF, confusion_matrix, Bayes_ris
 import support_vector_machines as SVM
 from data_visualization import Z_score
 import logistic_regression as LR
+import gmm as GMM
 
 
 def optimal_threshold(llr, L):
@@ -50,10 +51,15 @@ def combine_scores(llr1, llr2, L):
     DTE[1, :] = DTE2.reshape([DTE2.shape[0],])
 
     # linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp):
-    s, minDCF = LR.linear_logistic_regression(DTR, LTR1, DTE, LTE1, 0, 0.5, pi, Cfn, Cfp)
-    actDCF = act_DCF(s, pi, Cfn, Cfp, LTE1)
+    all_minDCF = []
+    all_actDCF = []
+    for l in [0, 1e-6, 1e-4, 1e-2, 1, 100]:
+        s, minDCF = LR.linear_logistic_regression(DTR, LTR1, DTE, LTE1, l, 0.5, pi, Cfn, Cfp)
+        actDCF = act_DCF(s, pi, Cfn, Cfp, LTE1)
+        all_minDCF.append(minDCF)
+        all_actDCF.append(actDCF)
 
-    return minDCF, actDCF
+    return all_minDCF, all_actDCF
 
 
 
@@ -81,7 +87,8 @@ if __name__ == "__main__":
     print("optimal estimated threshold was: " + str(opt_t))
     """
     # Quadratic LR, lambda = 0, Z-normalized features, no PCA
-    _, llrLR = LR.k_fold_cross_validation(DN, L, LR.quadratic_logistic_regression, k, pi, Cfp, Cfn, 0, pi_T, seed = 0)
+    #_, llrLR = LR.k_fold_cross_validation(DN, L, LR.quadratic_logistic_regression, k, pi, Cfp, Cfn, 0, pi_T, seed = 0)
+    #_, llrGMM = GMM.k_fold_cross_validation(D, L, k, pi, Cfp, Cfn, False, False, 8, seed = 0, just_llr = True)
     """
     # Estimate optimal threshold on the llr
     opt_t, minDCF, actDCF, actDCFth = optimal_threshold(llrLR, L)
@@ -94,7 +101,7 @@ if __name__ == "__main__":
     """
 
     # Train a linear logistic regression model to combine the scores of the two models 
-    minDCF, actDCF = combine_scores(llrSVM, llrLR, L)
+    minDCF, actDCF = combine_scores(llrSVM, llrSVM, L)
 
     print("\n *** COMBINED SCORES *** \n")
     print("min DCF: " + str(minDCF))

@@ -1,4 +1,5 @@
 
+from sys import float_repr_style
 import numpy as np
 from scipy.special import logsumexp
 from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_4to1
@@ -102,26 +103,39 @@ def LBG(X, gmm, t, components, alpha, psi, diag, tied):
 def GMM_classifier(DTR, LTR, DTE, LTE, n_classes, components, pi, Cfn, Cfp, diag, tied, t = 1e-6, psi = 0.01, alpha = 0.1):
 
     S = np.zeros([n_classes, DTE.shape[1]])
-    for c in range(n_classes):
-        covNew = np.cov(DTR[:, LTR == c])
-        # Impose the constraint on the covariance matrix
-        U, s, _ = np.linalg.svd(covNew)
-        s[s<psi] = psi
-        covNew = np.dot(U, s.reshape([s.shape[0], 1])*U.T)
-        # Start from max likelihood solution for one component
-        starting_gmm = [(1.0, np.mean(DTR[:, LTR == c], axis = 1), covNew)]
-        new_gmm, _ = LBG(DTR[:, LTR == c], starting_gmm, t, components, alpha, psi, diag, tied)
-        logdens, _ = logpdf_GMM(DTE, new_gmm)
-        S[c, :] = logdens
+    all_gmm = []
+    all_llr = []
+    all_minDCF = []
+
+    for count in range(int(np.log2(components))):
+        for c in range(n_classes):
+            if count == 0:
+                covNew = np.cov(DTR[:, LTR == c])
+                # Impose the constraint on the covariance matrix
+                U, s, _ = np.linalg.svd(covNew)
+                s[s<psi] = psi
+                covNew = np.dot(U, s.reshape([s.shape[0], 1])*U.T)
+                # Start from max likelihood solution for one component
+                starting_gmm = [(1.0, np.mean(DTR[:, LTR == c], axis = 1), covNew)]
+                all_gmm.append(starting_gmm)
+            else:
+                starting_gmm = all_gmm[c]
+
+            new_gmm, _ = LBG(DTR[:, LTR == c], starting_gmm, t, 2**(count+1), alpha, psi, diag, tied)
+            all_gmm[c] = new_gmm
+            logdens, _ = logpdf_GMM(DTE, new_gmm)
+            S[c, :] = logdens
+
+        llr = compute_llr(S)
+        minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
+        print("Components: %d,      min DCF: %f" % (2**(count + 1), minDCF))
     
-    llr = compute_llr(S)
-    minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
     return llr, minDCF
 
 
 
 
-def k_fold_cross_validation(D, L, k, pi, Cfp, Cfn, diag, tied, components, seed = 0):
+def k_fold_cross_validation(D, L, k, pi, Cfp, Cfn, diag, tied, components, seed = 0, just_llr = False):
 
     np.random.seed(seed)
     idx = np.random.permutation(D.shape[1])
@@ -150,9 +164,12 @@ def k_fold_cross_validation(D, L, k, pi, Cfp, Cfn, diag, tied, components, seed 
         llr[idxTest], _ = GMM_classifier(DTR, LTR, DTE, LTE, 2, components, pi, Cfn, Cfp, diag, tied)
         start_index += elements
 
-    minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, L)
+    if just_llr:
+        minDCF = 0
+    else:
+        minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, L)
 
-    return minDCF
+    return minDCF, llr
 
 
 
@@ -174,6 +191,7 @@ if __name__ == "__main__":
     DCF_z = np.zeros([4, len(components_val)])
     DCF_gaus = np.zeros([4, len(components_val)])
     
+    
     with open(fileName, "w") as f:
 
         f.write("**** min DCF for different GMM models *****\n\n")
@@ -184,11 +202,11 @@ if __name__ == "__main__":
                 f.write("\nDiag: " + str(diag) + "\n")
                 for t, components in enumerate(components_val):
                     f.write("\ncomponents: " + str(components) + "\n")
-                    minDCF = k_fold_cross_validation(DN, L, k, pi, Cfp, Cfn, diag, tied, components)
+                    minDCF, _ = k_fold_cross_validation(DN, L, k, pi, Cfp, Cfn, diag, tied, components)
                     DCF_z[2*i+j,t] = minDCF 
                     f.write("\nZ-norm: " + str(minDCF) + "\n")
 
-                    minDCF = k_fold_cross_validation(DG, L, k, pi, Cfp, Cfn, diag, tied, components)
+                    minDCF, _ = k_fold_cross_validation(DG, L, k, pi, Cfp, Cfn, diag, tied, components)
                     DCF_gaus[2*i+j,t] = minDCF 
                     f.write("\nGaussianized: " + str(minDCF) + "\n")
 
@@ -225,3 +243,4 @@ if __name__ == "__main__":
     plt.ylabel("min DCF")
     plt.legend(["Z-normalized", "Gaussianized"])
     plt.savefig("../Images/GMM_tied_diag")
+    
