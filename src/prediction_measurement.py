@@ -78,12 +78,16 @@ def ROC_curve(llr, true_labels):
         FPR[index] = M[1,0] / (M[0,0] + M[1,0])
         TPR[index] = 1 - FNR
 
+    """
     plt.figure()
     plt.plot(FPR, TPR)
     plt.grid(True)
     plt.xlabel("FPR")
     plt.ylabel("TPR")
     plt.show()
+    """
+    
+    return FPR, TPR
 
 
 def Bayes_error_plots(llr, true_labels):
@@ -167,3 +171,6 @@ if __name__ == "__main__":
 
         # Print Bayes error plots 
         #Bayes_error_plots(llr, LTE)
+
+
+

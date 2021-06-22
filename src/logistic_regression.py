@@ -7,6 +7,8 @@ from data_visualization import Z_score
 import matplotlib.pyplot as plt
 from pca import compute_pca
 
+
+
 def logreg_obj_wrap(DTR, LTR, l, pi_T):
 
     def logreg_obj(v):
@@ -15,7 +17,6 @@ def logreg_obj_wrap(DTR, LTR, l, pi_T):
         Nt = sum(LTR == 1)
         Nf = sum(LTR == 0)
 
-        
         J = l/2 * np.linalg.norm(w)**2 + pi_T / Nt * sum(np.log1p(np.exp( - (np.dot(w.T, DTR[:, LTR == 1]) + b )))) + \
             (1 - pi_T) / Nf * sum(np.log1p(np.exp((np.dot(w.T, DTR[:, LTR == 0]) + b ))))
 
@@ -26,12 +27,13 @@ def logreg_obj_wrap(DTR, LTR, l, pi_T):
             (1-pi_T) / Nf * np.sum(1/(1+np.exp(-np.dot(w.T, DTR[:, LTR == 0]) - b)))
 
         dJ = np.concatenate((dJw, np.array(dJb).reshape(1,)))
+        
         return J, dJ
 
     return logreg_obj
 
 
-def linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp):
+def linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp, calibration=False):
     
     logreg_obj = logreg_obj_wrap(DTR, LTR, l, pi_T)
 
@@ -40,7 +42,10 @@ def linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp):
     w, b = optV[0:-1], optV[-1]
 
     # Compute scores
-    s = np.dot(w.T, DTE) + b
+    if calibration:
+        s = np.dot(w.T, DTE) - b
+    else:
+        s = np.dot(w.T, DTE) + b
 
     minDCF, _ = min_DCF(s, pi, Cfn, Cfp, LTE)
 
