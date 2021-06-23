@@ -100,7 +100,7 @@ def LBG(X, gmm, t, components, alpha, psi, diag, tied):
     return gmm, ll
 
 
-def GMM_classifier(DTR, LTR, DTE, LTE, n_classes, components, pi, Cfn, Cfp, diag, tied, t = 1e-6, psi = 0.01, alpha = 0.1):
+def GMM_classifier(DTR, LTR, DTE, LTE, n_classes, components, pi, Cfn, Cfp, diag, tied, t = 1e-6, psi = 0.01, alpha = 0.1, f=0, type=""):
 
     S = np.zeros([n_classes, DTE.shape[1]])
     all_gmm = []
@@ -128,7 +128,13 @@ def GMM_classifier(DTR, LTR, DTE, LTE, n_classes, components, pi, Cfn, Cfp, diag
 
         llr = compute_llr(S)
         minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
-        print("Components: %d,      min DCF: %f" % (2**(count + 1), minDCF))
+
+        if f == 0:
+            print("Components: %d,      min DCF: %f" % (2**(count + 1), minDCF))
+        else:
+            f.write("\ncomponents: " + str(2**(count + 1)) + "\n")
+            f.write("\n" + type + ": " + str(minDCF) + "\n")
+
     
     return llr, minDCF
 

@@ -1,0 +1,28 @@
+**** min DCF for different quadratic kernel SVM models ****
+
+log(gamma) = -1 
+Values of min DCF for values of C = [1e-1, 1, 10]
+
+Z-normalized features - no PCA - no rebalancing
+ single split: 0.29817456353913063
+ single split: 0.2524059970451755
+ single split: 0.3118458289115009
+
+Z-normalized features - no PCA - rebalancing
+ single split: 0.3017250348544437
+ single split: 0.24104188775828703
+ single split: 0.3011866117319017
+**** min DCF for different quadratic kernel SVM models ****
+
+Values of min DCF for values of C = [1e-1, 1, 10]
+
+log(gamma) = -2 
+Z-normalized features - no PCA - no rebalancing
+ single split: 0.30222964396445884
+ single split: 0.2664648230226606
+ single split: 0.258050336059263
+
+Z-normalized features - no PCA - rebalancing
+ single split: 0.298830035166573
+ single split: 0.24726626714110328
+ single split: 0.2598190690222028

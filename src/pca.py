@@ -28,6 +28,21 @@ def compute_pca(m, D, use_svd = False):
     return DP
 
 
+def compute_pca_eval(m, DTR, DTE, use_svd = False):
+    C = covariance_matrix(DTR)
+    # compute eigenvalues and eigenvectors
+    if use_svd:
+        U, _, _ = np.linalg.svd(C)
+        P = U[:, 0:m]
+    else:
+        _, U = np.linalg.eigh(C)
+        # extract leading eigenvectors
+        P = U[:, ::-1][:, 0:m]
+    # apply projection to initial matrix
+    DP = np.dot(P.T, DTE)
+    return DP
+
+
 
 if __name__ == "__main__":
     data_matrix, class_labels = load("../Data/Train.txt")

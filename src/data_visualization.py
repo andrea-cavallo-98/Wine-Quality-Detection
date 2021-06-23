@@ -39,6 +39,16 @@ def gaussianize_features(D):
     return gauss_feat
 
 
+def gaussianize_features_eval(DTR, DTE):
+    # Apply Gaussianization to test data using training data as a reference
+    gauss_feat = np.zeros(DTE.shape)
+    for feat in range(DTE.shape[0]):
+        for sample in range(DTE.shape[1]):
+            gauss_feat[feat, sample] = norm.ppf((sum(DTE[feat, sample] < DTR[feat, :]) + 1) / (DTR.shape[1] + 2))
+    return gauss_feat
+
+
+
 def feat_heatmap(D, figName):
     plt.figure()
     sns.heatmap(np.corrcoef(D))
@@ -48,10 +58,14 @@ def feat_heatmap(D, figName):
 def Z_score(D):
     return (D - D.mean(1).reshape((D.shape[0], 1))) / (np.var(D, axis = 1).reshape((D.shape[0], 1)) ** 0.5)
 
+def Z_score_eval(DTR, DTE):
+    # Apply Z-score normalization to test data using mean and variance of training dataset 
+    return (DTE - DTR.mean(1).reshape((DTR.shape[0], 1))) / (np.var(DTR, axis = 1).reshape((DTR.shape[0], 1)) ** 0.5)
+
 
 if __name__ == "__main__":
 
-
+    """
     # load the dataset
     data_matrix, class_labels = load("../Data/Train.txt")
     
@@ -73,7 +87,19 @@ if __name__ == "__main__":
 
     # gauss_feat = gaussianize_features(data_matrix)
     # np.save("gaussianized_features.npy", gauss_feat)
-    
+    """
+
+    # Gaussianize test data using training data as reference
+    DTR, LTR = load("../Data/Train.txt")
+    DTE, LTE = load("../Data/Test.txt")
+
+    #DTE_gauss = gaussianize_features_eval(DTR, DTE)
+    #np.save("gaus_test.npy", DTE_gauss)
+
+    DTE_gauss = np.load("./src/gaus_test.npy")
+
+    print_histograms(DTE_gauss, LTE, "GaussFeatHist")
+
 
 
 

@@ -1,0 +1,18 @@
+**** min DCF for different GMM models *****
+
+
+Tied: True
+
+Diag: False
+
+components: 2
+
+Z-norm: 0.33659248392533864
+
+components: 4
+
+Z-norm: 0.3008614769960672
+
+components: 8
+
+Z-norm: 0.2881916266100672
