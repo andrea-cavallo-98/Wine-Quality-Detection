@@ -12,6 +12,38 @@ import gaussian_models as GM
 import logistic_regression as LR
 
 
+def evaluate_model_fusion(llrTrain1, llrTrain2, llrTest1, llrTest2, LTR, LTE):
+    
+    # Define DTR and DTE as combinations of llr from different models
+    DTR = np.zeros([2, llrTrain1.shape[0]])
+    DTR[0, :] = llrTrain1.reshape([llrTrain1.shape[0],])
+    DTR[1, :] = llrTrain2.reshape([llrTrain2.shape[0],])
+    DTE = np.zeros([2, llrTest1.shape[0]])
+    DTE[0, :] = llrTest1.reshape([llrTest1.shape[0],])
+    DTE[1, :] = llrTest2.reshape([llrTest2.shape[0],])
+
+    s, minDCF = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0, 0.5, pi, Cfn, Cfp, calibration=False)
+    actDCF = act_DCF(s, pi, Cfn, Cfp, LTE)
+
+    return minDCF, actDCF
+
+
+def evaluate_model_fusion3(llrTrain1, llrTrain2, llrTrain3, llrTest1, llrTest2, llrTest3, LTR, LTE):
+    
+    # Define DTR and DTE as combinations of llr from different models
+    DTR = np.zeros([3, llrTrain1.shape[0]])
+    DTR[0, :] = llrTrain1.reshape([llrTrain1.shape[0],])
+    DTR[1, :] = llrTrain2.reshape([llrTrain2.shape[0],])
+    DTR[2, :] = llrTrain3.reshape([llrTrain3.shape[0],])
+    DTE = np.zeros([3, llrTest1.shape[0]])
+    DTE[0, :] = llrTest1.reshape([llrTest1.shape[0],])
+    DTE[1, :] = llrTest2.reshape([llrTest2.shape[0],])
+    DTE[2, :] = llrTest3.reshape([llrTest3.shape[0],])
+
+    s, minDCF = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0, 0.5, pi, Cfn, Cfp, calibration=False)
+    actDCF = act_DCF(s, pi, Cfn, Cfp, LTE)
+
+    return minDCF, actDCF
 
 
 
@@ -243,6 +275,7 @@ if __name__ == "__main__":
             
             print("Finished Z-normalized features - rebalancing")
     """
+    """
     #######################
     # GMM
     #######################
@@ -263,7 +296,56 @@ if __name__ == "__main__":
                 _, minDCF = GMM.GMM_classifier(DGTR, LTR, DGTE, LTE, 2, components, pi, Cfn, Cfp, diag, tied, f=f, type="Gaussianized")
 
                 print("Finished tied: %s, diag: %s" % (str(tied), str(diag)))
+    """
 
+    ########################
+    # Fusions of best models
+    ########################
 
+    ##################### SELECTED MODELS #######################
+    # RBF-SVM, Z-normalized features, C=10, loggamma=-2, rebalancing
+    # Quadratic logistic regression, Z-normalized features, lambda = 0
+    # GMM, Z-normalized features, 8 components
 
+    # Load scores on training data
+    llrSVMTrain = np.load("llrSVM.npy")
+    llrLRTrain = np.load("llrLR.npy")
+    llrGMMTrain = np.load("llrGMM.npy")
 
+    # Train models on all training dataset and get scores on evaluation dataset
+    # llrSVMTest, _ = SVM.kernel_SVM(DNTR, LTR, DNTE, LTE, 10, "RBF", pi, Cfn, Cfp, pi_T, gamma = np.exp(-2), csi = K_SVM**0.5, rebalancing = True)
+    # llrLRTest, _ = LR.quadratic_logistic_regression(DNTR, LTR, DNTE, LTE, 0, pi_T, pi, Cfn, Cfp)
+    # llrGMMTest, _ = GMM.GMM_classifier(DNTR, LTR, DNTE, LTE, 2, 8, pi, Cfn, Cfp, False, False)
+    # np.save("llrSVMTest.npy", llrSVMTest)
+    # np.save("llrLRTest.npy", llrLRTest)
+    # np.save("llrGMMTest.npy", llrGMMTest)
+
+    llrSVMTest = np.load("llrSVMTest.npy")
+    llrLRTest = np.load("llrLRTest.npy")
+    llrGMMTest = np.load("llrGMMTest.npy")
+
+    # Evaluate performance of combined models 
+    # (LR model trained on training set scores and evaluated on test set scores)
+
+    fileName = "../Results/fusions_results_eval.txt"
+    with open(fileName, "w") as f:
+
+        f.write("*********** Actual DCF of single models ************")
+        actDCF = act_DCF(llrSVMTest, pi, Cfn, Cfp, LTE)
+        f.write("\n\nSVM: " + str(actDCF))
+        actDCF = act_DCF(llrLRTest, pi, Cfn, Cfp, LTE)
+        f.write("\nLR: " + str(actDCF))
+        actDCF = act_DCF(llrGMMTest, pi, Cfn, Cfp, LTE)
+        f.write("\nGMM: " + str(actDCF))
+
+        f.write("\n\n*********** SVM + LR ************\n\n")
+        minDCF, actDCF = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE)
+        f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
+        
+        f.write("\n\n*********** SVM + GMM ************\n\n")
+        minDCF, actDCF = evaluate_model_fusion(llrSVMTrain, llrGMMTrain, llrSVMTest, llrGMMTest, LTR, LTE)
+        f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
+
+        f.write("\n\n*********** SVM + LR + GMM ************\n\n")
+        minDCF, actDCF = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE)
+        f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))

@@ -44,10 +44,6 @@ def score_calibration(llr, L):
     # Split llr
     (DTR, LTR), (DTE, LTE) = split_db_4to1(llr.reshape([llr.shape[0], 1]), L, seed = S)
 
-    # train linear log reg model and evaluate scores
-    #s, minDCF = LR.linear_logistic_regression(DTR.reshape([1, DTR.shape[0]]), LTR, DTE.reshape([1, DTE.shape[0]]), LTE, 0, 0.5, pi, Cfn, Cfp)
-    #actDCF = act_DCF(s, pi, Cfn, Cfp, LTE)
-
     all_minDCF = []
     all_actDCF = []
     for l in [0, 1e-5, 1e-3, 0.1, 1, 10, 100]:
@@ -87,14 +83,11 @@ def combine_scores3(llr1, llr2, llr3, L):
     all_minDCF = []
     all_actDCF = []
     for l in [0, 1e-6, 1e-4, 1e-2, 1, 100]:
-        s, minDCF = LR.linear_logistic_regression(DTR, LTR1, DTE, LTE1, l, 0.5, pi, Cfn, Cfp, calibration=True)
+        s, minDCF = LR.linear_logistic_regression(DTR, LTR1, DTE, LTE1, l, 0.5, pi, Cfn, Cfp, calibration=False)
         actDCF = act_DCF(s, pi, Cfn, Cfp, LTE1)
         all_minDCF.append(minDCF)
         all_actDCF.append(actDCF)
-    """
-    s, minDCF = LR.linear_logistic_regression(DTR, LTR1, DTE, LTE1, 0, 0.5, pi, Cfn, Cfp, calibration=False)
-    actDCF = act_DCF(s, pi, Cfn, Cfp, LTE1)
-    """
+
     return all_minDCF, all_actDCF
 
 
@@ -121,14 +114,11 @@ def combine_scores(llr1, llr2, L):
     all_minDCF = []
     all_actDCF = []
     for l in [0, 1e-6, 1e-4, 1e-2, 1, 100]:
-        s, minDCF = LR.linear_logistic_regression(DTR, LTR1, DTE, LTE1, l, 0.5, pi, Cfn, Cfp, calibration=True)
+        s, minDCF = LR.linear_logistic_regression(DTR, LTR1, DTE, LTE1, l, 0.5, pi, Cfn, Cfp, calibration=False)
         actDCF = act_DCF(s, pi, Cfn, Cfp, LTE1)
         all_minDCF.append(minDCF)
         all_actDCF.append(actDCF)
-    """
-    s, minDCF = LR.linear_logistic_regression(DTR, LTR1, DTE, LTE1, 0, 0.5, pi, Cfn, Cfp, calibration=False)
-    actDCF = act_DCF(s, pi, Cfn, Cfp, LTE1)
-    """
+
     return all_minDCF, all_actDCF
 
 
@@ -150,9 +140,7 @@ def analyze_scores(llr, L, name):
 if __name__ == "__main__":
 
     D, L = load("../Data/Train.txt")   
-    DT, LT = load("../Data/Test.txt")    
     DN = Z_score(D)
-    DNT = Z_score(DT)
     k = 5
     pi = 0.5
     Cfp = 1
@@ -161,44 +149,35 @@ if __name__ == "__main__":
     (DNTR, LNTR), (DNTE, LNTE) = split_db_4to1(DN, L, seed = S)
 
 
-    # Compute actual DCF for most promising model assuming theoretical threshold
-    # RBF kernel SVM with C = 10 and log(gamma) = -2, rebalacing and Z-normalized features
+    ##################### SELECTED MODELS #######################
+    # RBF-SVM, Z-normalized features, C=10, loggamma=-2, rebalancing
+    # Quadratic logistic regression, Z-normalized features, lambda = 0
+    # GMM, Z-normalized features, 8 components
+
+
+    ###### RBF kernel SVM with C = 10 and log(gamma) = -2, rebalacing and Z-normalized features ######
     
     #_, llrSVM = SVM.k_fold_cross_validation(DN, L, SVM.kernel_SVM, k, pi, Cfp, Cfn, 10, pi_T, 1, rebalancing = True, type = "RBF", gamma = np.exp(-2), just_llr=True)
-
     #np.save("llrSVM.npy", llrSVM)
-
     llrSVM = np.load("llrSVM.npy")
-
     #analyze_scores(llrSVM, L, "RBF-SVM")
 
-    # Quadratic LR, lambda = 0, Z-normalized features, no PCA
+    ###### Quadratic LR, lambda = 0, Z-normalized features, no PCA ######
+
     #_, llrLR = LR.k_fold_cross_validation(DN, L, LR.quadratic_logistic_regression, k, pi, Cfp, Cfn, 0, pi_T)
-    #llrLRss, minDCFLR = LR.quadratic_logistic_regression(DNTR, LNTR, DNTE, LNTE, 0, pi_T, pi, Cfn, Cfp)
-    #_, _, actDCFLRss, actDCFthLRss = optimal_threshold(llrLRss, LNTE)
     #np.save("llrLR.npy", llrLR)
-    #print("***** LR *****")
-    #print("min DCF: " + str(minDCFLR) + " act DCF: " + str(actDCFLRss) + " act DCF th: " + str(actDCFthLRss))
-    #_, llrGMM = GMM.k_fold_cross_validation(D, L, k, pi, Cfp, Cfn, False, False, 4, seed = 0, just_llr = True)
-    #np.save("llrGMM.npy", llrGMM)
     llrLR = np.load("llrLR.npy")
     #analyze_scores(llrLR, L, "Log Reg")
-
+   
+    ###### GMM, Z-normalized features, 8 components ######
+    #_, llrGMM = GMM.k_fold_cross_validation(DN, L, k, pi, Cfp, Cfn, False, False, 8, seed = 0, just_llr = True)
+    #np.save("llrGMM.npy", llrGMM)
     llrGMM = np.load("llrGMM.npy")
     #analyze_scores(llrGMM, L, "GMM")
 
 
-    # Estimate optimal threshold on the llr
-    #opt_t, minDCF, actDCF, actDCFth = optimal_threshold(llrLR, L)
-    """
-    print(" \n*** Quad-LR *** \n")
-    print("min DCF on test set: " + str(minDCF))
-    print("actual DCF on test set with optimal theoretical threshold: " + str(actDCFth))
-    print("min DCF on test set with optimal estimated threshold: " + str(actDCF))
-    print("optimal estimated threshold was: " + str(opt_t))
-    """
 
-    # Train a linear logistic regression model to combine the scores of the two models 
+    ###### Combined models ######
     
     minDCF, actDCF = combine_scores(llrSVM, llrGMM, L)
 

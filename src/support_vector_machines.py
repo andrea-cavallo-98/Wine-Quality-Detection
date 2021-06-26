@@ -96,7 +96,7 @@ def kernel_SVM(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, d = 0, c = 0, ga
     if store_model:
         np.save("SVM_alpha.npy", optAlpha)
 
-    # Compute scores, predictions and accuracy
+    # Compute scores
     S = np.sum((optAlpha * Z).reshape([DTR.shape[1], 1]) * kernel(DTR, DTE, type, d, c, gamma, csi), axis = 0)
 
     minDCF, _ = min_DCF(S, pi, Cfn, Cfp, LTE)

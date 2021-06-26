@@ -17,6 +17,10 @@
     * for Gaussian models, no difference if features are z-normalized or not
     * for Linear Regression, not very helpful
 
+### TODO
+* ROC plots and minDCF plots
+* Check if logistic regression to combine scores is correct (weird results in model_tuning)
+* Maybe redo figures of GMMs
 
 
 

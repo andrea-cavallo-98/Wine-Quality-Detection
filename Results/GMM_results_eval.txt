@@ -11,8 +11,132 @@ Z-norm: 0.33659248392533864
 
 components: 4
 
-Z-norm: 0.3008614769960672
+Z-norm: 0.30379809393012464
 
 components: 8
 
-Z-norm: 0.2881916266100672
+Z-norm: 0.3008614769960672
+
+components: 16
+
+Z-norm: 0.3110108829098779
+
+components: 2
+
+Gaussianized: 0.33578354870258237
+
+components: 4
+
+Gaussianized: 0.28507553530182905
+
+components: 8
+
+Gaussianized: 0.283590319828537
+
+components: 16
+
+Gaussianized: 0.28405331169236536
+
+Diag: True
+
+components: 2
+
+Z-norm: 0.3901044592879289
+
+components: 4
+
+Z-norm: 0.3714235179058202
+
+components: 8
+
+Z-norm: 0.3181534427866908
+
+components: 16
+
+Z-norm: 0.32544166302515765
+
+components: 2
+
+Gaussianized: 0.44971076013900163
+
+components: 4
+
+Gaussianized: 0.32078573360800716
+
+components: 8
+
+Gaussianized: 0.3080950745989138
+
+components: 16
+
+Gaussianized: 0.30491655742139545
+
+Tied: False
+
+Diag: False
+
+components: 2
+
+Z-norm: 0.3022166385750255
+
+components: 4
+
+Z-norm: 0.29935545289968163
+
+components: 8
+
+Z-norm: 0.3056968807873983
+
+components: 16
+
+Z-norm: 0.3264638866346214
+
+components: 2
+
+Gaussianized: 0.30855806646274214
+
+components: 4
+
+Gaussianized: 0.31756559918430194
+
+components: 8
+
+Gaussianized: 0.32787367084919994
+
+components: 16
+
+Gaussianized: 0.38242867844434736
+
+Diag: True
+
+components: 2
+
+Z-norm: 0.46710416796720566
+
+components: 4
+
+Z-norm: 0.33737280729134156
+
+components: 8
+
+Z-norm: 0.3417738310755977
+
+components: 16
+
+Z-norm: 0.32851613708720895
+
+components: 2
+
+Gaussianized: 0.41100151902948584
+
+components: 4
+
+Gaussianized: 0.25465853049503717
+
+components: 8
+
+Gaussianized: 0.28389464594127806
+
+components: 16
+
+Gaussianized: 0.3203981730028924

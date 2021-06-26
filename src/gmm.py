@@ -85,17 +85,17 @@ def GMM_EM_estimation(X, gmm, t, psi, diag = False, tied = False):
 
 def LBG(X, gmm, t, components, alpha, psi, diag, tied):
 
-    for count in range(int(np.log2(components))):
-        new_gmm = []
-        for c in gmm:
+    #for count in range(int(np.log2(components))):
+    new_gmm = []
+    for c in gmm:
 
-            U, s, Vh = np.linalg.svd(c[2])
-            d = U[:, 0:1] * s[0]**0.5 * alpha       
+        U, s, Vh = np.linalg.svd(c[2])
+        d = U[:, 0:1] * s[0]**0.5 * alpha       
 
-            new_gmm.append((c[0] / 2, c[1].reshape([X.shape[0], 1]) + d, c[2]))
-            new_gmm.append((c[0] / 2, c[1].reshape([X.shape[0], 1]) - d, c[2]))
+        new_gmm.append((c[0] / 2, c[1].reshape([X.shape[0], 1]) + d, c[2]))
+        new_gmm.append((c[0] / 2, c[1].reshape([X.shape[0], 1]) - d, c[2]))
 
-        gmm, ll = GMM_EM_estimation(X, new_gmm, t, psi, diag, tied)
+    gmm, ll = GMM_EM_estimation(X, new_gmm, t, psi, diag, tied)
 
     return gmm, ll
 
@@ -132,6 +132,7 @@ def GMM_classifier(DTR, LTR, DTE, LTE, n_classes, components, pi, Cfn, Cfp, diag
         if f == 0:
             print("Components: %d,      min DCF: %f" % (2**(count + 1), minDCF))
         else:
+            print("Components: %d,      min DCF: %f" % (2**(count + 1), minDCF))
             f.write("\ncomponents: " + str(2**(count + 1)) + "\n")
             f.write("\n" + type + ": " + str(minDCF) + "\n")
 
