@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import logsumexp
 from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_4to1
-from prediction_measurement import act_DCF, min_DCF, confusion_matrix, Bayes_risk
+from prediction_measurement import Bayes_error_plots, act_DCF, min_DCF, confusion_matrix, Bayes_risk, ROC_curve
 import support_vector_machines as SVM
 from data_visualization import Z_score, Z_score_eval
 import logistic_regression as LR
@@ -25,7 +25,7 @@ def evaluate_model_fusion(llrTrain1, llrTrain2, llrTest1, llrTest2, LTR, LTE):
     s, minDCF = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0, 0.5, pi, Cfn, Cfp, calibration=False)
     actDCF = act_DCF(s, pi, Cfn, Cfp, LTE)
 
-    return minDCF, actDCF
+    return minDCF, actDCF, s
 
 
 def evaluate_model_fusion3(llrTrain1, llrTrain2, llrTrain3, llrTest1, llrTest2, llrTest3, LTR, LTE):
@@ -43,8 +43,55 @@ def evaluate_model_fusion3(llrTrain1, llrTrain2, llrTrain3, llrTest1, llrTest2, 
     s, minDCF = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0, 0.5, pi, Cfn, Cfp, calibration=False)
     actDCF = act_DCF(s, pi, Cfn, Cfp, LTE)
 
-    return minDCF, actDCF
+    return minDCF, actDCF, s
 
+
+def plot_ROC_curve(FPR1, TPR1, FPR2, TPR2, FPR3, TPR3, l1, l2, l3, figName):
+    plt.figure()
+    plt.plot(FPR1, TPR1, 'b')
+    plt.plot(FPR2, TPR2, 'r')
+    plt.plot(FPR3, TPR3, 'g')
+    plt.grid(True)
+    plt.xlabel("FPR")
+    plt.ylabel("TPR")
+    plt.legend([l1, l2, l3])
+    plt.savefig("../Images/" + figName +".png")   
+    #plt.show()
+
+
+def plot_Bayes_error(D1, D2, D3, D4, D5, D6, l1, l2, l3, l4, l5, l6, figName):
+
+    effPriorLogOdds = np.linspace(-3,3,21)
+
+    plt.figure()
+    plt.plot(effPriorLogOdds, D1, label=l1, color='red')
+    plt.plot(effPriorLogOdds, D2, label=l2, color='red', linestyle='dashed')
+    plt.plot(effPriorLogOdds, D3, label=l3, color="b")
+    plt.plot(effPriorLogOdds, D4, label=l4, color='b', linestyle='dashed')
+    plt.plot(effPriorLogOdds, D5, label=l5, color="g")
+    plt.plot(effPriorLogOdds, D6, label=l6, color="g", linestyle='dashed')
+    plt.ylim([0, 1.1])
+    plt.xlim([-3, 3])
+    plt.legend()
+    # plt.show()
+    plt.savefig("../Images/" + figName +".png")   
+
+
+
+def plot_Bayes_error4(D1, D2, D3, D4, l1, l2, l3, l4, figName):
+
+    effPriorLogOdds = np.linspace(-3,3,21)
+
+    plt.figure()
+    plt.plot(effPriorLogOdds, D1, label=l1, color='red')
+    plt.plot(effPriorLogOdds, D2, label=l2, color='g')
+    plt.plot(effPriorLogOdds, D3, label=l3, color="b")
+    plt.plot(effPriorLogOdds, D4, label=l4, color='b', linestyle='dashed')
+    plt.ylim([0, 1.1])
+    plt.xlim([-3, 3])
+    plt.legend()
+    # plt.show()
+    plt.savefig("../Images/" + figName +".png")   
 
 
 if __name__ == "__main__":
@@ -326,7 +373,7 @@ if __name__ == "__main__":
 
     # Evaluate performance of combined models 
     # (LR model trained on training set scores and evaluated on test set scores)
-
+    """
     fileName = "../Results/fusions_results_eval.txt"
     with open(fileName, "w") as f:
 
@@ -339,13 +386,105 @@ if __name__ == "__main__":
         f.write("\nGMM: " + str(actDCF))
 
         f.write("\n\n*********** SVM + LR ************\n\n")
-        minDCF, actDCF = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE)
+        minDCF, actDCF, _ = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
         
         f.write("\n\n*********** SVM + GMM ************\n\n")
-        minDCF, actDCF = evaluate_model_fusion(llrSVMTrain, llrGMMTrain, llrSVMTest, llrGMMTest, LTR, LTE)
+        minDCF, actDCF, _ = evaluate_model_fusion(llrSVMTrain, llrGMMTrain, llrSVMTest, llrGMMTest, LTR, LTE)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
 
         f.write("\n\n*********** SVM + LR + GMM ************\n\n")
-        minDCF, actDCF = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE)
+        minDCF, actDCF, _ = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
+    """
+    """
+    # ROC plots
+    FPR_SVM, TPR_SVM = ROC_curve(llrSVMTest, LTE)
+    FPR_LR, TPR_LR = ROC_curve(llrLRTest, LTE)
+    FPR_GMM, TPR_GMM = ROC_curve(llrGMMTest, LTE)
+
+    _, _, llrSVMLR = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE)
+    _, _, llrSVMGMM = evaluate_model_fusion(llrSVMTrain, llrGMMTrain, llrSVMTest, llrGMMTest, LTR, LTE)
+    _, _, llrSVMLRGMM = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE)
+
+    FPR_SVMLR, TPR_SVMLR = ROC_curve(llrSVMLR, LTE)
+    FPR_SVMGMM, TPR_SVMGMM = ROC_curve(llrSVMGMM, LTE)
+    FPR_SVMLRGMM, TPR_SVMLRGMM = ROC_curve(llrSVMLRGMM, LTE)
+
+    np.save("../Data/FPR_SVM.npy", FPR_SVM)
+    np.save("../Data/TPR_SVM.npy", TPR_SVM)
+    np.save("../Data/FPR_LR.npy", FPR_LR)
+    np.save("../Data/TPR_LR.npy", TPR_LR)
+    np.save("../Data/FPR_GMM.npy", FPR_GMM)
+    np.save("../Data/TPR_GMM.npy", TPR_GMM)
+    np.save("../Data/FPR_SVMLR.npy", FPR_SVMLR)
+    np.save("../Data/TPR_SVMLR.npy", TPR_SVMLR)
+    np.save("../Data/FPR_SVMGMM.npy", FPR_SVMGMM)
+    np.save("../Data/TPR_SVMGMM.npy", TPR_SVMGMM)
+    np.save("../Data/FPR_SVMLRGMM.npy", FPR_SVMLRGMM)
+    np.save("../Data/TPR_SVMLRGMM.npy", TPR_SVMLRGMM)
+    
+    FPR_SVM = np.load("../Data/FPR_SVM.npy")
+    TPR_SVM = np.load("../Data/TPR_SVM.npy")
+    FPR_LR = np.load("../Data/FPR_LR.npy")
+    TPR_LR = np.load("../Data/TPR_LR.npy")
+    FPR_GMM = np.load("../Data/FPR_GMM.npy")
+    TPR_GMM = np.load("../Data/TPR_GMM.npy")
+    FPR_SVMLR = np.load("../Data/FPR_SVMLR.npy")
+    TPR_SVMLR = np.load("../Data/TPR_SVMLR.npy")
+    FPR_SVMGMM = np.load("../Data/FPR_SVMGMM.npy")
+    TPR_SVMGMM = np.load("../Data/TPR_SVMGMM.npy")
+    FPR_SVMLRGMM = np.load("../Data/FPR_SVMLRGMM.npy")
+    TPR_SVMLRGMM = np.load("../Data/TPR_SVMLRGMM.npy")
+
+    plot_ROC_curve(FPR_SVM, TPR_SVM, FPR_LR, TPR_LR, FPR_GMM, TPR_GMM, "SVM", "LR", "GMM", "ROC_eval1")
+    plot_ROC_curve(FPR_SVMLR, TPR_SVMLR, FPR_SVMGMM, TPR_SVMGMM, FPR_SVMLRGMM, TPR_SVMLRGMM, "SVM+LR", "SVM+GMM", "SVM+LR+GMM", "ROC_eval2")
+    plot_ROC_curve(FPR_SVM, TPR_SVM, FPR_LR, TPR_LR, FPR_SVMLRGMM, TPR_SVMLRGMM, "SVM", "LR", "SVM+LR+GMM", "ROC_eval3")
+    """
+    """
+    # min DCF plots
+    DCF_SVM, minDCF_SVM = Bayes_error_plots(llrSVMTest, LTE)
+    DCF_LR, minDCF_LR = Bayes_error_plots(llrLRTest, LTE)
+    DCF_GMM, minDCF_GMM = Bayes_error_plots(llrGMMTest, LTE)
+
+    _, _, llrSVMLR = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE)
+    _, _, llrSVMGMM = evaluate_model_fusion(llrSVMTrain, llrGMMTrain, llrSVMTest, llrGMMTest, LTR, LTE)
+    _, _, llrSVMLRGMM = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE)
+
+    DCF_SVMLR, minDCF_SVMLR = Bayes_error_plots(llrSVMLR, LTE)
+    DCF_SVMGMM, minDCF_SVMGMM = Bayes_error_plots(llrSVMGMM, LTE)
+    DCF_SVMLRGMM, minDCF_SVMLRGMM = Bayes_error_plots(llrSVMLRGMM, LTE)
+
+    np.save("../Data/DCF_SVM.npy", DCF_SVM)
+    np.save("../Data/minDCF_SVM.npy", minDCF_SVM)
+    np.save("../Data/DCF_LR.npy", DCF_LR)
+    np.save("../Data/minDCF_LR.npy", minDCF_LR)
+    np.save("../Data/DCF_GMM.npy", DCF_GMM)
+    np.save("../Data/minDCF_GMM.npy", minDCF_GMM)
+    np.save("../Data/DCF_SVMLR.npy", DCF_SVMLR)
+    np.save("../Data/minDCF_SVMLR.npy", minDCF_SVMLR)
+    np.save("../Data/DCF_SVMGMM.npy", DCF_SVMGMM)
+    np.save("../Data/minDCF_SVMGMM.npy", minDCF_SVMGMM)
+    np.save("../Data/DCF_SVMLRGMM.npy", DCF_SVMLRGMM)
+    np.save("../Data/minDCF_SVMLRGMM.npy", minDCF_SVMLRGMM)
+    """
+    DCF_SVM = np.load("../Data/DCF_SVM.npy")
+    minDCF_SVM = np.load("../Data/minDCF_SVM.npy")
+    DCF_LR = np.load("../Data/DCF_LR.npy")
+    minDCF_LR = np.load("../Data/minDCF_LR.npy")
+    DCF_GMM = np.load("../Data/DCF_GMM.npy")
+    minDCF_GMM = np.load("../Data/minDCF_GMM.npy")
+    DCF_SVMLR = np.load("../Data/DCF_SVMLR.npy")
+    minDCF_SVMLR = np.load("../Data/minDCF_SVMLR.npy")
+    DCF_SVMGMM = np.load("../Data/DCF_SVMGMM.npy")
+    minDCF_SVMGMM = np.load("../Data/minDCF_SVMGMM.npy")
+    DCF_SVMLRGMM = np.load("../Data/DCF_SVMLRGMM.npy")
+    minDCF_SVMLRGMM = np.load("../Data/minDCF_SVMLRGMM.npy")
+
+
+    plot_Bayes_error(DCF_SVM, minDCF_SVM, DCF_LR, minDCF_LR, DCF_GMM, minDCF_GMM, 
+        "SVM: act DCF", "SVM: min DCF", "LR: act DCF", "LR: min DCF", "GMM: act DCF", "GMM: min DCF", "Bayes_error1_eval")
+    plot_Bayes_error(DCF_SVMLR, minDCF_SVMLR, DCF_SVMGMM, minDCF_SVMGMM, DCF_SVMLRGMM, minDCF_SVMLRGMM, 
+        "SVM+LR: act DCF", "SVM+LR: min DCF", "SVM+GMM: act DCF", "SVM+GMM: min DCF", "SVM+LR+GMM: act DCF", "SVM+LR+GMM: min DCF", "Bayes_error2_eval")
+    plot_Bayes_error4(DCF_SVM, DCF_LR, DCF_SVMLRGMM, minDCF_SVMLRGMM, 
+        "SVM: act DCF", "LR: act DCF", "SVM+LR+GMM: act DCF", "SVM+LR+GMM: min DCF", "Bayes_error3_eval")

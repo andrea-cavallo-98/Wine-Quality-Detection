@@ -78,15 +78,6 @@ def ROC_curve(llr, true_labels):
         FPR[index] = M[1,0] / (M[0,0] + M[1,0])
         TPR[index] = 1 - FNR
 
-    """
-    plt.figure()
-    plt.plot(FPR, TPR)
-    plt.grid(True)
-    plt.xlabel("FPR")
-    plt.ylabel("TPR")
-    plt.show()
-    """
-    
     return FPR, TPR
 
 
@@ -100,8 +91,10 @@ def Bayes_error_plots(llr, true_labels):
         pred = optimal_Bayes_decisions(llr, pi_tilde, 1, 1)
         M = confusion_matrix(true_labels, pred, 2)
         _, DCF[index] = Bayes_risk(M, pi_tilde, 1, 1)
-        minDCF[index] = min_DCF(llr, pi_tilde, 1, 1, true_labels)
+        minDCF[index], _ = min_DCF(llr, pi_tilde, 1, 1, true_labels)
 
+    return DCF, minDCF
+    """
     plt.figure()
     plt.plot(effPriorLogOdds, DCF, label="DCF", color="r")
     plt.plot(effPriorLogOdds, minDCF, label="min DCF", color="b")
@@ -109,6 +102,8 @@ def Bayes_error_plots(llr, true_labels):
     plt.xlim([-3, 3])
     plt.legend()
     plt.show()
+    """
+
 
 def compute_llr(s):
     if s.shape[0] != 2:
