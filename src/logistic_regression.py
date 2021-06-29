@@ -129,7 +129,7 @@ if __name__ == "__main__":
         (DNTR, LNTR), (DNTE, LNTE) = split_db_4to1(DN, L)
         DN10 = compute_pca(10, DN)
         (DNTR10, LNTR10), (DNTE10, LNTE10) = split_db_4to1(DN10, L)
-        DG = np.load("gaussianized_features.npy")
+        DG = np.load("../Data/gaussianized_features.npy")
         (DGTR, LGTR), (DGTE, LGTE) = split_db_4to1(DG, L)
         l_val = [0, 1e-6, 1e-4, 1e-2, 1, 100]
         pi_T = 0.5

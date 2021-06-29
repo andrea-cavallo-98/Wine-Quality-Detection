@@ -155,7 +155,7 @@ if __name__ == "__main__":
     (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
     DN = Z_score(D)
     (DNTR, LNTR), (DNTE, LNTE) = split_db_4to1(DN, L)
-    DG = np.load("gaussianized_features.npy")
+    DG = np.load("../Data/gaussianized_features.npy")
     (DGTR, LGTR), (DGTE, LGTE) = split_db_4to1(DG, L)
     C_val = [1e-1, 1, 10]
     pi_T = 0.5
@@ -286,23 +286,22 @@ if __name__ == "__main__":
         img2 = "quad_SVM_C_single_split.png"
 
         plt.figure()
-        plt.plot(C_val, DCF_kfold_z_nobal)
-        plt.plot(C_val, DCF_kfold_z_bal)
+        plt.plot(C_val, DCF_kfold_z_nobal, marker='o', linestyle='dashed', color="red")
+        plt.plot(C_val, DCF_kfold_z_bal, marker='o', linestyle='dashed', color="blue")
         plt.xscale("log")
-        plt.xlabel(r"$\lambda$")
+        plt.xlabel("C")
         plt.ylabel("min DCF")
         plt.legend(["No balancing", "Balancing"])
         plt.savefig("../Images/" + img1)
 
         plt.figure()
-        plt.plot(C_val, DCF_single_split_z_nobal)
-        plt.plot(C_val, DCF_single_split_z_bal)
+        plt.plot(C_val, DCF_single_split_z_nobal, marker='o', linestyle='dashed', color="red")
+        plt.plot(C_val, DCF_single_split_z_bal, marker='o', linestyle='dashed', color="blue")
         plt.xscale("log")
-        plt.xlabel(r"$\lambda$")
+        plt.xlabel("C")
         plt.ylabel("min DCF")
         plt.legend(["No balancing", "Balancing"])
         plt.savefig("../Images/" + img2)
-    
     """
     """
     RBF KERNEL SVM
@@ -346,42 +345,28 @@ if __name__ == "__main__":
 
         img1 = "RBF_SVM_C_kfold_bal.png"
         img2 = "RBF_SVM_C_single_split_bal.png"
-        img3 = "RBF_SVM_C_kfold_nobal.png"
-        img4 = "RBF_SVM_C_single_split_nobal.png"
 
         plt.figure()
-        plt.plot(C_val, DCF_kfold_z_bal[0,:])
-        plt.plot(C_val, DCF_kfold_z_bal[1,:])
+        plt.plot(C_val, DCF_kfold_z_nobal[0,:], marker='o', linestyle='dashed', color="red")
+        plt.plot(C_val, DCF_kfold_z_bal[0,:], marker='o', linestyle='dashed', color="blue")
+        plt.plot(C_val, DCF_kfold_z_nobal[1,:], marker='o', linestyle='dashed', color="green")
+        plt.plot(C_val, DCF_kfold_z_bal[1,:], marker='o', linestyle='dashed', color="black")
         plt.xscale("log")
         plt.xlabel("C")
         plt.ylabel("min DCF")
-        plt.legend([r"$log \gamma = -1$", r"$log \gamma = -2$"])
+        plt.legend([r"$log \gamma = -1$"+", No balancing", r"$log \gamma = -1$"+", Balancing",
+            r"$log \gamma = -2$"+", No balancing", r"$log \gamma = -2$"+", Balancing"])
         plt.savefig("../Images/" + img1)
 
         plt.figure()
-        plt.plot(C_val, DCF_single_split_z_bal[0,:])
-        plt.plot(C_val, DCF_single_split_z_bal[1,:])
+        plt.plot(C_val, DCF_single_split_z_nobal[0,:], marker='o', linestyle='dashed', color="red")
+        plt.plot(C_val, DCF_single_split_z_bal[0,:], marker='o', linestyle='dashed', color="blue")
+        plt.plot(C_val, DCF_single_split_z_nobal[1,:], marker='o', linestyle='dashed', color="green")
+        plt.plot(C_val, DCF_single_split_z_bal[1,:], marker='o', linestyle='dashed', color="black")
         plt.xscale("log")
         plt.xlabel("C")
         plt.ylabel("min DCF")
-        plt.legend([r"$log \gamma = -1$", r"$log \gamma = -2$"])
-        plt.savefig("../Images/" + img2)
-
-        plt.figure()
-        plt.plot(C_val, DCF_kfold_z_nobal[0,:])
-        plt.plot(C_val, DCF_kfold_z_nobal[1,:])
-        plt.xscale("log")
-        plt.xlabel("C")
-        plt.ylabel("min DCF")
-        plt.legend([r"$log \gamma = -1$", r"$log \gamma = -2$"])
-        plt.savefig("../Images/" + img1)
-
-        plt.figure()
-        plt.plot(C_val, DCF_single_split_z_nobal[0,:])
-        plt.plot(C_val, DCF_single_split_z_nobal[1,:])
-        plt.xscale("log")
-        plt.xlabel("C")
-        plt.ylabel("min DCF")
-        plt.legend([r"$log \gamma = -1$", r"$log \gamma = -2$"])
+        plt.legend([r"$log \gamma = -1$"+", No balancing", r"$log \gamma = -1$"+", Balancing",
+            r"$log \gamma = -2$"+", No balancing", r"$log \gamma = -2$"+", Balancing"])
         plt.savefig("../Images/" + img2)
         """

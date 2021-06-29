@@ -75,7 +75,8 @@ if __name__ == "__main__":
     # print histograms 
     print_histograms(data_matrix, class_labels, "RawFeatHist")
     
-    gauss_feat = np.load("gaussianized_features.npy")
+    gauss_feat = np.load("../Data/gaussianized_features.npy")
+    gauss_feat = np.load("../Data/gaussianized_features.npy")
     print_histograms(gauss_feat, class_labels, "GaussFeatHist")
 
     feat_heatmap(gauss_feat, "GaussFeatHeat")
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     #DTE_gauss = gaussianize_features_eval(DTR, DTE)
     #np.save("gaus_test.npy", DTE_gauss)
 
-    DTE_gauss = np.load("./src/gaus_test.npy")
+    DTE_gauss = np.load("../Data/gaus_test.npy")
 
     print_histograms(DTE_gauss, LTE, "GaussFeatHist")
 

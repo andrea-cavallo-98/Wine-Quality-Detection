@@ -186,7 +186,7 @@ if __name__ == "__main__":
     (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
     DN = Z_score(D)
     (DNTR, LNTR), (DNTE, LNTE) = split_db_4to1(DN, L)
-    DG = np.load("gaussianized_features.npy")
+    DG = np.load("../Data/gaussianized_features.npy")
     (DGTR, LGTR), (DGTE, LGTE) = split_db_4to1(DG, L)
     components_val = [2, 4, 8, 16]
     k = 5
@@ -198,7 +198,7 @@ if __name__ == "__main__":
     DCF_z = np.zeros([4, len(components_val)])
     DCF_gaus = np.zeros([4, len(components_val)])
     
-    
+    """
     with open(fileName, "w") as f:
 
         f.write("**** min DCF for different GMM models *****\n\n")
@@ -220,34 +220,34 @@ if __name__ == "__main__":
                     print("Finished tied: %s, diag: %s, components: %d" % (str(tied), str(diag), components))
 
     plt.figure()
-    plt.plot(components_val, DCF_z[2,:])
-    plt.plot(components_val, DCF_gaus[2,:])
+    plt.plot(components_val, DCF_z[2,:], marker='o', linestyle='dashed', color="red")
+    plt.plot(components_val, DCF_gaus[2,:], marker='o', linestyle='dashed', color="blue")
     plt.xlabel("Components")
     plt.ylabel("min DCF")
     plt.legend(["Z-normalized", "Gaussianized"])
     plt.savefig("../Images/GMM_notied_nodiag")
 
     plt.figure()
-    plt.plot(components_val, DCF_z[3,:])
-    plt.plot(components_val, DCF_gaus[3,:])
+    plt.plot(components_val, DCF_z[3,:], marker='o', linestyle='dashed', color="red")
+    plt.plot(components_val, DCF_gaus[3,:], marker='o', linestyle='dashed', color="blue")
     plt.xlabel("Components")
     plt.ylabel("min DCF")
     plt.legend(["Z-normalized", "Gaussianized"])
     plt.savefig("../Images/GMM_notied_diag")
 
     plt.figure()
-    plt.plot(components_val, DCF_z[0,:])
-    plt.plot(components_val, DCF_gaus[0,:])
+    plt.plot(components_val, DCF_z[0,:], marker='o', linestyle='dashed', color="red")
+    plt.plot(components_val, DCF_gaus[0,:], marker='o', linestyle='dashed', color="blue")
     plt.xlabel("Components")
     plt.ylabel("min DCF")
     plt.legend(["Z-normalized", "Gaussianized"])
     plt.savefig("../Images/GMM_tied_nodiag")
 
     plt.figure()
-    plt.plot(components_val, DCF_z[1,:])
-    plt.plot(components_val, DCF_gaus[1,:])
+    plt.plot(components_val, DCF_z[1,:], marker='o', linestyle='dashed', color="red")
+    plt.plot(components_val, DCF_gaus[1,:], marker='o', linestyle='dashed', color="blue")
     plt.xlabel("Components")
     plt.ylabel("min DCF")
     plt.legend(["Z-normalized", "Gaussianized"])
     plt.savefig("../Images/GMM_tied_diag")
-    
+    """

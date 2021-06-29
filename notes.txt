@@ -1,0 +1,6 @@
+
+TODO:
+- check that all code is correct, add comments and make it readable
+- ON THE PROJECT:
+    - weird results on score calibration on test data, why?
+    - score calibration for SVM works with wD - b instead of wD + b, why?

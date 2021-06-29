@@ -12,6 +12,24 @@ import gaussian_models as GM
 import logistic_regression as LR
 
 
+
+def evaluate_score_calibration(llrTrain, llrTest, LTR, LTE, pi, Cfn, Cfp):
+    
+    # Train score calibration on training llr and evaluate results on test llr
+    s, minDCF = LR.linear_logistic_regression(llrTrain.reshape([1,llrTrain.shape[0]]), LTR, 
+        llrTest.reshape([1,llrTest.shape[0]]), LTE, 0, 0.5, pi, Cfn, Cfp, calibration=False)
+    actDCF_cal = act_DCF(s, pi, Cfn, Cfp, LTE)
+
+    # Select optimal threshold on training llr and evaluate results on test llr
+    _, opt_t = min_DCF(llrTrain, pi, Cfn, Cfp, LTR)
+    PredictedLabels = np.zeros(LTE.shape)
+    PredictedLabels[llrTest > opt_t] = 1
+    M = confusion_matrix(LTE, PredictedLabels, 2)
+    _, actDCF_estimated = Bayes_risk(M, pi, Cfn, Cfp)
+
+    return actDCF_cal, actDCF_estimated
+
+
 def evaluate_model_fusion(llrTrain1, llrTrain2, llrTest1, llrTest2, LTR, LTE):
     
     # Define DTR and DTE as combinations of llr from different models
@@ -103,8 +121,8 @@ if __name__ == "__main__":
     DNTR = Z_score(DTR)
     DNTE = Z_score_eval(DTR, DTE)
     # Gaussianization
-    DGTR = np.load("gaussianized_features.npy")
-    DGTE = np.load("gaus_test.npy")
+    DGTR = np.load("../Data/gaussianized_features.npy")
+    DGTE = np.load("../Data/gaus_test.npy")
     # 10-PCA, Gaussianized features
     DGTR10 = compute_pca(10, DGTR)
     DGTE10 = compute_pca_eval(10, DGTR, DGTE)
@@ -355,9 +373,9 @@ if __name__ == "__main__":
     # GMM, Z-normalized features, 8 components
 
     # Load scores on training data
-    llrSVMTrain = np.load("llrSVM.npy")
-    llrLRTrain = np.load("llrLR.npy")
-    llrGMMTrain = np.load("llrGMM.npy")
+    llrSVMTrain = np.load("../Data/llrSVM.npy")
+    llrLRTrain = np.load("../Data/llrLR.npy")
+    llrGMMTrain = np.load("../Data/llrGMM.npy")
 
     # Train models on all training dataset and get scores on evaluation dataset
     # llrSVMTest, _ = SVM.kernel_SVM(DNTR, LTR, DNTE, LTE, 10, "RBF", pi, Cfn, Cfp, pi_T, gamma = np.exp(-2), csi = K_SVM**0.5, rebalancing = True)
@@ -367,24 +385,28 @@ if __name__ == "__main__":
     # np.save("llrLRTest.npy", llrLRTest)
     # np.save("llrGMMTest.npy", llrGMMTest)
 
-    llrSVMTest = np.load("llrSVMTest.npy")
-    llrLRTest = np.load("llrLRTest.npy")
-    llrGMMTest = np.load("llrGMMTest.npy")
+    llrSVMTest = np.load("../Data/llrSVMTest.npy")
+    llrLRTest = np.load("../Data/llrLRTest.npy")
+    llrGMMTest = np.load("../Data/llrGMMTest.npy")
 
     # Evaluate performance of combined models 
     # (LR model trained on training set scores and evaluated on test set scores)
-    """
-    fileName = "../Results/fusions_results_eval.txt"
+    
+    fileName = "../Results/fusions_results_eval2.txt"
     with open(fileName, "w") as f:
 
         f.write("*********** Actual DCF of single models ************")
         actDCF = act_DCF(llrSVMTest, pi, Cfn, Cfp, LTE)
-        f.write("\n\nSVM: " + str(actDCF))
+        actDCF_cal, actDCF_estimated = evaluate_score_calibration(llrSVMTrain, llrSVMTest, LTR, LTE, pi, Cfn, Cfp)
+        f.write("\n\nSVM: actual: " + str(actDCF) + " calibrated: " + str(actDCF_cal) + " estimated: " + str(actDCF_estimated))
         actDCF = act_DCF(llrLRTest, pi, Cfn, Cfp, LTE)
-        f.write("\nLR: " + str(actDCF))
+        actDCF_cal, actDCF_estimated = evaluate_score_calibration(llrLRTrain, llrLRTest, LTR, LTE, pi, Cfn, Cfp)
+        f.write("\nLR: actual: " + str(actDCF) + " calibrated: " + str(actDCF_cal) + " estimated: " + str(actDCF_estimated))
         actDCF = act_DCF(llrGMMTest, pi, Cfn, Cfp, LTE)
-        f.write("\nGMM: " + str(actDCF))
+        actDCF_cal, actDCF_estimated = evaluate_score_calibration(llrGMMTrain, llrGMMTest, LTR, LTE, pi, Cfn, Cfp)
+        f.write("\nGMM: actual: " + str(actDCF) + " calibrated: " + str(actDCF_cal) + " estimated: " + str(actDCF_estimated))
 
+        """
         f.write("\n\n*********** SVM + LR ************\n\n")
         minDCF, actDCF, _ = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
@@ -396,7 +418,8 @@ if __name__ == "__main__":
         f.write("\n\n*********** SVM + LR + GMM ************\n\n")
         minDCF, actDCF, _ = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
-    """
+        """
+    
     """
     # ROC plots
     FPR_SVM, TPR_SVM = ROC_curve(llrSVMTest, LTE)
@@ -468,6 +491,7 @@ if __name__ == "__main__":
     np.save("../Data/DCF_SVMLRGMM.npy", DCF_SVMLRGMM)
     np.save("../Data/minDCF_SVMLRGMM.npy", minDCF_SVMLRGMM)
     """
+    """
     DCF_SVM = np.load("../Data/DCF_SVM.npy")
     minDCF_SVM = np.load("../Data/minDCF_SVM.npy")
     DCF_LR = np.load("../Data/DCF_LR.npy")
@@ -488,3 +512,4 @@ if __name__ == "__main__":
         "SVM+LR: act DCF", "SVM+LR: min DCF", "SVM+GMM: act DCF", "SVM+GMM: min DCF", "SVM+LR+GMM: act DCF", "SVM+LR+GMM: min DCF", "Bayes_error2_eval")
     plot_Bayes_error4(DCF_SVM, DCF_LR, DCF_SVMLRGMM, minDCF_SVMLRGMM, 
         "SVM: act DCF", "LR: act DCF", "SVM+LR+GMM: act DCF", "SVM+LR+GMM: min DCF", "Bayes_error3_eval")
+    """

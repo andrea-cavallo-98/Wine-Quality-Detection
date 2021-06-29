@@ -94,15 +94,6 @@ def Bayes_error_plots(llr, true_labels):
         minDCF[index], _ = min_DCF(llr, pi_tilde, 1, 1, true_labels)
 
     return DCF, minDCF
-    """
-    plt.figure()
-    plt.plot(effPriorLogOdds, DCF, label="DCF", color="r")
-    plt.plot(effPriorLogOdds, minDCF, label="min DCF", color="b")
-    plt.ylim([0, 1.1])
-    plt.xlim([-3, 3])
-    plt.legend()
-    plt.show()
-    """
 
 
 def compute_llr(s):

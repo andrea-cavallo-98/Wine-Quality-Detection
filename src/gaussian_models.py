@@ -229,7 +229,7 @@ if __name__ == "__main__":
     D, L = load("../Data/Train.txt")  
     D = Z_score(D)
     (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
-    DG = np.load("gaussianized_features.npy")
+    DG = np.load("../Data/gaussianized_features.npy")
     (DGTR, LGTR), (DGTE, LGTE) = split_db_4to1(DG, L)
     DG10 = compute_pca(10, DG)
     (DGTR10, LGTR10), (DGTE10, LGTE10) = split_db_4to1(DG10, L)
@@ -240,7 +240,7 @@ if __name__ == "__main__":
     pi = 0.5
     Cfn = 1
     Cfp = 1
-    fileName = "../Results/gaussian_resultsZ.txt"
+    fileName = "../Results/gaussian_results.txt"
 
     with open(fileName, "w") as f:
     
