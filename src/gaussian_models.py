@@ -30,7 +30,7 @@ def GAU_logpdf_ND(x, mu, C):
     return logN
 
 
-def MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs = True):
+def MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn):
 
     mu = []
     sigma = []
@@ -40,36 +40,16 @@ def MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs = True):
         sigma.append(s)
     
     S = np.zeros([n_class, DTE.shape[1]])
-    
-    if use_logs:
+    for c in range(n_class):
+        # log domain
+        S[c,:] = GAU_logpdf_ND(DTE, mu[c], sigma[c])
 
-        for c in range(n_class):
-            # log domain
-            S[c,:] = GAU_logpdf_ND(DTE, mu[c], sigma[c])
-        
-        # Compute joint probabilities
-        SJoint = S + np.log(1/n_class)
-        # Compute marginal log-densities
-        SMarg = logsumexp(SJoint, axis = 0)
-        # Compute class log-posterior probabilities
-        SPost = SJoint - SMarg
-
-    else:
-
-        for c in range(n_class):
-            S[c,:] = GAU_logpdf_ND(DTE, mu[c], sigma[c])
-
-        # Compute joint probabilities
-        SJoint = S / n_class
-        # Compute class posterior probabilities
-        SPost = SJoint / SJoint.sum(axis = 0)
-
-    llr = compute_llr(SPost)
+    llr = compute_llr(S)
     minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
     return llr, minDCF
 
 
-def naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs = True):
+def naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn):
 
     mu = []
     sigma = []
@@ -79,37 +59,17 @@ def naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs = True):
         sigma.append(s * np.eye(s.shape[0]))
 
     S = np.zeros([n_class, DTE.shape[1]])
-    
-    if use_logs:
+    for c in range(n_class):
+        # log domain
+        S[c,:] = GAU_logpdf_ND(DTE, mu[c], sigma[c])
 
-        for c in range(n_class):
-            # log domain
-            S[c,:] = GAU_logpdf_ND(DTE, mu[c], sigma[c])
-
-        # Compute joint probabilities
-        SJoint = S + np.log(1/n_class)
-        # Compute marginal log-densities
-        SMarg = logsumexp(SJoint, axis = 0)
-        # Compute class log-posterior probabilities
-        SPost = SJoint - SMarg
-
-    else:
-
-        for c in range(n_class):
-            S[c,:] = GAU_logpdf_ND(DTE, mu[c], sigma[c])
-
-        # Compute joint probabilities
-        SJoint = S / n_class
-        # Compute class posterior probabilities
-        SPost = SJoint / SJoint.sum(axis = 0)
-
-    llr = compute_llr(SPost)
+    llr = compute_llr(S)
     minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
     return llr, minDCF
 
 
 
-def tied_MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs = True):
+def tied_MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn):
 
     mu = []
     tied_sigma = np.zeros([DTR.shape[0], DTR.shape[0]])
@@ -120,37 +80,16 @@ def tied_MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs = True):
         tied_sigma += sum(LTR == c) / DTR.shape[1] * s
         
     S = np.zeros([n_class, DTE.shape[1]])
-    
-    if use_logs:
-            
-        for c in range(n_class):
-            # log domain
-            S[c,:] = GAU_logpdf_ND(DTE, mu[c], tied_sigma)
+    for c in range(n_class):
+        # log domain
+        S[c,:] = GAU_logpdf_ND(DTE, mu[c], tied_sigma)
 
-        # Compute joint probabilities
-        SJoint = S + np.log(1/n_class)
-        # Compute marginal log-densities
-        SMarg = logsumexp(SJoint, axis = 0)
-        # Compute class log-posterior probabilities
-        SPost = SJoint - SMarg
-
-    else:
-
-        for c in range(n_class):
-            # log domain
-            S[c,:] = GAU_logpdf_ND(DTE, mu[c], tied_sigma)
-
-        # Compute joint probabilities
-        SJoint = S / n_class
-        # Compute class posterior probabilities
-        SPost = SJoint / SJoint.sum(axis = 0)
-
-    llr = compute_llr(SPost)
+    llr = compute_llr(S)
     minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
     return llr, minDCF
 
 
-def tied_naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs = True):
+def tied_naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn):
 
     mu = []
     tied_sigma = np.zeros([DTR.shape[0], DTR.shape[0]])
@@ -161,32 +100,11 @@ def tied_naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs = True):
         tied_sigma += sum(LTR == c) / DTR.shape[1] * ( s * np.eye(s.shape[0])) 
         
     S = np.zeros([n_class, DTE.shape[1]])
-    
-    if use_logs:
-            
-        for c in range(n_class):
-            # log domain
-            S[c,:] = GAU_logpdf_ND(DTE, mu[c], tied_sigma)
+    for c in range(n_class):
+        # log domain
+        S[c,:] = GAU_logpdf_ND(DTE, mu[c], tied_sigma)
 
-        # Compute joint probabilities
-        SJoint = S + np.log(1/n_class)
-        # Compute marginal log-densities
-        SMarg = logsumexp(SJoint, axis = 0)
-        # Compute class log-posterior probabilities
-        SPost = SJoint - SMarg
-
-    else:
-
-        for c in range(n_class):
-            # log domain
-            S[c,:] = GAU_logpdf_ND(DTE, mu[c], tied_sigma)
-
-        # Compute joint probabilities
-        SJoint = S / n_class
-        # Compute class posterior probabilities
-        SPost = SJoint / SJoint.sum(axis = 0)
-
-    llr = compute_llr(SPost)
+    llr = compute_llr(S)
     minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
     return llr, minDCF
 
@@ -236,11 +154,10 @@ if __name__ == "__main__":
     DG9 = compute_pca(9, DG)
     (DGTR9, LGTR9), (DGTE9, LGTE9) = split_db_4to1(DG9, L)
     k = 5
-    use_logs = True
     pi = 0.5
     Cfn = 1
     Cfp = 1
-    fileName = "../Results/gaussian_results.txt"
+    fileName = "../Results/gaussian_results2.txt"
 
     with open(fileName, "w") as f:
     
@@ -248,19 +165,19 @@ if __name__ == "__main__":
         f.write("Gaussianized features - no PCA\n")
         f.write("5-fold cross validation\n")
         # K FOLD CROSS VALIDATION
-        DCF_MVG = k_fold_cross_validation(DG, L, MVG, k, pi, Cfp, Cfn, use_logs)
-        DCF_naive_Bayes = k_fold_cross_validation(DG, L, naive_Bayes, k, pi, Cfp, Cfn, use_logs)
-        DCF_tied_MVG = k_fold_cross_validation(DG, L, tied_MVG, k, pi, Cfp, Cfn, use_logs)
-        DCF_tied_naive_Bayes = k_fold_cross_validation(DG, L, tied_naive_Bayes, k, pi, Cfp, Cfn, use_logs)
+        DCF_MVG = k_fold_cross_validation(DG, L, MVG, k, pi, Cfp, Cfn)
+        DCF_naive_Bayes = k_fold_cross_validation(DG, L, naive_Bayes, k, pi, Cfp, Cfn)
+        DCF_tied_MVG = k_fold_cross_validation(DG, L, tied_MVG, k, pi, Cfp, Cfn)
+        DCF_tied_naive_Bayes = k_fold_cross_validation(DG, L, tied_naive_Bayes, k, pi, Cfp, Cfn)
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) + 
                 " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
         f.write("\nsingle fold\n")
         # K FOLD CROSS VALIDATION
-        _, DCF_MVG = MVG(DGTR, LGTR, DGTE, LGTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_naive_Bayes = naive_Bayes(DGTR, LGTR, DGTE, LGTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_MVG = tied_MVG(DGTR, LGTR, DGTE, LGTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_naive_Bayes = tied_naive_Bayes(DGTR, LGTR, DGTE, LGTE, pi, Cfp, Cfn, use_logs)
+        _, DCF_MVG = MVG(DGTR, LGTR, DGTE, LGTE, pi, Cfp, Cfn)
+        _, DCF_naive_Bayes = naive_Bayes(DGTR, LGTR, DGTE, LGTE, pi, Cfp, Cfn)
+        _, DCF_tied_MVG = tied_MVG(DGTR, LGTR, DGTE, LGTE, pi, Cfp, Cfn)
+        _, DCF_tied_naive_Bayes = tied_naive_Bayes(DGTR, LGTR, DGTE, LGTE, pi, Cfp, Cfn)
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) + 
             " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
@@ -269,19 +186,19 @@ if __name__ == "__main__":
         f.write("\n\nGaussianized features - PCA = 10\n")
         f.write("5-fold cross validation\n")
         # K FOLD CROSS VALIDATION
-        DCF_MVG = k_fold_cross_validation(DG10, L, MVG, k, pi, Cfp, Cfn, use_logs)
-        DCF_naive_Bayes = k_fold_cross_validation(DG10, L, naive_Bayes, k, pi, Cfp, Cfn, use_logs)
-        DCF_tied_MVG = k_fold_cross_validation(DG10, L, tied_MVG, k, pi, Cfp, Cfn, use_logs)
-        DCF_tied_naive_Bayes = k_fold_cross_validation(DG10, L, tied_naive_Bayes, k, pi, Cfp, Cfn, use_logs)
+        DCF_MVG = k_fold_cross_validation(DG10, L, MVG, k, pi, Cfp, Cfn)
+        DCF_naive_Bayes = k_fold_cross_validation(DG10, L, naive_Bayes, k, pi, Cfp, Cfn)
+        DCF_tied_MVG = k_fold_cross_validation(DG10, L, tied_MVG, k, pi, Cfp, Cfn)
+        DCF_tied_naive_Bayes = k_fold_cross_validation(DG10, L, tied_naive_Bayes, k, pi, Cfp, Cfn)
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) + 
             " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
         f.write("\nsingle fold\n")
         # K FOLD CROSS VALIDATION
-        _, DCF_MVG = MVG(DGTR10, LGTR10, DGTE10, LGTE10, pi, Cfp, Cfn, use_logs)
-        _, DCF_naive_Bayes = naive_Bayes(DGTR10, LGTR10, DGTE10, LGTE10, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_MVG = tied_MVG(DGTR10, LGTR10, DGTE10, LGTE10, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_naive_Bayes = tied_naive_Bayes(DGTR10, LGTR10, DGTE10, LGTE10, pi, Cfp, Cfn, use_logs)
+        _, DCF_MVG = MVG(DGTR10, LGTR10, DGTE10, LGTE10, pi, Cfp, Cfn)
+        _, DCF_naive_Bayes = naive_Bayes(DGTR10, LGTR10, DGTE10, LGTE10, pi, Cfp, Cfn)
+        _, DCF_tied_MVG = tied_MVG(DGTR10, LGTR10, DGTE10, LGTE10, pi, Cfp, Cfn)
+        _, DCF_tied_naive_Bayes = tied_naive_Bayes(DGTR10, LGTR10, DGTE10, LGTE10, pi, Cfp, Cfn)
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) 
             + " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
@@ -289,19 +206,19 @@ if __name__ == "__main__":
         f.write("\n\nGaussianized features - PCA = 9\n")
         f.write("5-fold cross validation\n")
         # K FOLD CROSS VALIDATION
-        DCF_MVG = k_fold_cross_validation(DG9, L, MVG, k, pi, Cfp, Cfn, use_logs)
-        DCF_naive_Bayes = k_fold_cross_validation(DG9, L, naive_Bayes, k, pi, Cfp, Cfn, use_logs)
-        DCF_tied_MVG = k_fold_cross_validation(DG9, L, tied_MVG, k, pi, Cfp, Cfn, use_logs)
-        DCF_tied_naive_Bayes = k_fold_cross_validation(DG9, L, tied_naive_Bayes, k, pi, Cfp, Cfn, use_logs)
+        DCF_MVG = k_fold_cross_validation(DG9, L, MVG, k, pi, Cfp, Cfn)
+        DCF_naive_Bayes = k_fold_cross_validation(DG9, L, naive_Bayes, k, pi, Cfp, Cfn)
+        DCF_tied_MVG = k_fold_cross_validation(DG9, L, tied_MVG, k, pi, Cfp, Cfn)
+        DCF_tied_naive_Bayes = k_fold_cross_validation(DG9, L, tied_naive_Bayes, k, pi, Cfp, Cfn)
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) + 
             " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
         f.write("\nsingle fold\n")
         # K FOLD CROSS VALIDATION
-        _, DCF_MVG = MVG(DGTR9, LGTR9, DGTE9, LGTE9, pi, Cfp, Cfn, use_logs)
-        _, DCF_naive_Bayes = naive_Bayes(DGTR9, LGTR9, DGTE9, LGTE9, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_MVG = tied_MVG(DGTR9, LGTR9, DGTE9, LGTE9, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_naive_Bayes = tied_naive_Bayes(DGTR9, LGTR9, DGTE9, LGTE9, pi, Cfp, Cfn, use_logs)
+        _, DCF_MVG = MVG(DGTR9, LGTR9, DGTE9, LGTE9, pi, Cfp, Cfn)
+        _, DCF_naive_Bayes = naive_Bayes(DGTR9, LGTR9, DGTE9, LGTE9, pi, Cfp, Cfn)
+        _, DCF_tied_MVG = tied_MVG(DGTR9, LGTR9, DGTE9, LGTE9, pi, Cfp, Cfn)
+        _, DCF_tied_naive_Bayes = tied_naive_Bayes(DGTR9, LGTR9, DGTE9, LGTE9, pi, Cfp, Cfn)
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) 
             + " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
@@ -309,19 +226,19 @@ if __name__ == "__main__":
         f.write("\n\nRaw features - no PCA\n")
         f.write("5-fold cross validation\n")
         # K FOLD CROSS VALIDATION
-        DCF_MVG = k_fold_cross_validation(D, L, MVG, k, pi, Cfp, Cfn, use_logs)
-        DCF_naive_Bayes = k_fold_cross_validation(D, L, naive_Bayes, k, pi, Cfp, Cfn, use_logs)
-        DCF_tied_MVG = k_fold_cross_validation(D, L, tied_MVG, k, pi, Cfp, Cfn, use_logs)
-        DCF_tied_naive_Bayes = k_fold_cross_validation(D, L, tied_naive_Bayes, k, pi, Cfp, Cfn, use_logs)
+        DCF_MVG = k_fold_cross_validation(D, L, MVG, k, pi, Cfp, Cfn)
+        DCF_naive_Bayes = k_fold_cross_validation(D, L, naive_Bayes, k, pi, Cfp, Cfn)
+        DCF_tied_MVG = k_fold_cross_validation(D, L, tied_MVG, k, pi, Cfp, Cfn)
+        DCF_tied_naive_Bayes = k_fold_cross_validation(D, L, tied_naive_Bayes, k, pi, Cfp, Cfn)
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) 
             + " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
         f.write("\nsingle fold\n")
         # K FOLD CROSS VALIDATION
-        _, DCF_MVG = MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_naive_Bayes = naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_MVG = tied_MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_naive_Bayes = tied_naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs)
+        _, DCF_MVG = MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn)
+        _, DCF_naive_Bayes = naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn)
+        _, DCF_tied_MVG = tied_MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn)
+        _, DCF_tied_naive_Bayes = tied_naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn)
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) + 
             " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))

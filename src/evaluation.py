@@ -133,7 +133,6 @@ if __name__ == "__main__":
     DNTR10 = compute_pca(10, DNTR)
     DNTE10 = compute_pca_eval(10, DNTR, DNTE)
 
-    use_logs = True
     pi = 0.5
     pi_T = 0.5
     Cfn = 1
@@ -141,8 +140,8 @@ if __name__ == "__main__":
     K_SVM = 1
     C_val = [1e-1, 1, 10]
 
+    
     """
-
     #######################################
     # Gaussian models
     #######################################
@@ -154,45 +153,45 @@ if __name__ == "__main__":
         f.write("*** min DCF for different gaussian models ***\n\n")
         f.write("Gaussianized features - no PCA\n")
 
-        _, DCF_MVG = GM.MVG(DGTR, LTR, DGTE, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_naive_Bayes = GM.naive_Bayes(DGTR, LTR, DGTE, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_MVG = GM.tied_MVG(DGTR, LTR, DGTE, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_naive_Bayes = GM.tied_naive_Bayes(DGTR, LTR, DGTE, LTE, pi, Cfp, Cfn, use_logs)
+        _, DCF_MVG = GM.MVG(DGTR, LTR, DGTE, LTE, pi, Cfp, Cfn)
+        _, DCF_naive_Bayes = GM.naive_Bayes(DGTR, LTR, DGTE, LTE, pi, Cfp, Cfn)
+        _, DCF_tied_MVG = GM.tied_MVG(DGTR, LTR, DGTE, LTE, pi, Cfp, Cfn)
+        _, DCF_tied_naive_Bayes = GM.tied_naive_Bayes(DGTR, LTR, DGTE, LTE, pi, Cfp, Cfn )
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) + 
             " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
 
         f.write("\n\nGaussianized features - PCA = 10\n")
 
-        _, DCF_MVG = GM.MVG(DGTR10, LTR, DGTE10, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_naive_Bayes = GM.naive_Bayes(DGTR10, LTR, DGTE10, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_MVG = GM.tied_MVG(DGTR10, LTR, DGTE10, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_naive_Bayes = GM.tied_naive_Bayes(DGTR10, LTR, DGTE10, LTE, pi, Cfp, Cfn, use_logs)
+        _, DCF_MVG = GM.MVG(DGTR10, LTR, DGTE10, LTE, pi, Cfp, Cfn )
+        _, DCF_naive_Bayes = GM.naive_Bayes(DGTR10, LTR, DGTE10, LTE, pi, Cfp, Cfn )
+        _, DCF_tied_MVG = GM.tied_MVG(DGTR10, LTR, DGTE10, LTE, pi, Cfp, Cfn )
+        _, DCF_tied_naive_Bayes = GM.tied_naive_Bayes(DGTR10, LTR, DGTE10, LTE, pi, Cfp, Cfn )
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) 
             + " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
         
         f.write("\n\nGaussianized features - PCA = 9\n")
     
-        _, DCF_MVG = GM.MVG(DGTR9, LTR, DGTE9, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_naive_Bayes = GM.naive_Bayes(DGTR9, LTR, DGTE9, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_MVG = GM.tied_MVG(DGTR9, LTR, DGTE9, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_naive_Bayes = GM.tied_naive_Bayes(DGTR9, LTR, DGTE9, LTE, pi, Cfp, Cfn, use_logs)
+        _, DCF_MVG = GM.MVG(DGTR9, LTR, DGTE9, LTE, pi, Cfp, Cfn )
+        _, DCF_naive_Bayes = GM.naive_Bayes(DGTR9, LTR, DGTE9, LTE, pi, Cfp, Cfn )
+        _, DCF_tied_MVG = GM.tied_MVG(DGTR9, LTR, DGTE9, LTE, pi, Cfp, Cfn )
+        _, DCF_tied_naive_Bayes = GM.tied_naive_Bayes(DGTR9, LTR, DGTE9, LTE, pi, Cfp, Cfn )
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) 
             + " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
         
         f.write("\n\nRaw features - no PCA\n")
        
-        _, DCF_MVG = GM.MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_naive_Bayes = GM.naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_MVG = GM.tied_MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs)
-        _, DCF_tied_naive_Bayes = GM.tied_naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn, use_logs)
+        _, DCF_MVG = GM.MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn )
+        _, DCF_naive_Bayes = GM.naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn )
+        _, DCF_tied_MVG = GM.tied_MVG(DTR, LTR, DTE, LTE, pi, Cfp, Cfn )
+        _, DCF_tied_naive_Bayes = GM.tied_naive_Bayes(DTR, LTR, DTE, LTE, pi, Cfp, Cfn )
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) + 
                     " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
-
     """
+    
     """
     ################################################
     # Logistic regression
@@ -391,7 +390,7 @@ if __name__ == "__main__":
 
     # Evaluate performance of combined models 
     # (LR model trained on training set scores and evaluated on test set scores)
-    
+    """
     fileName = "../Results/fusions_results_eval2.txt"
     with open(fileName, "w") as f:
 
@@ -406,7 +405,6 @@ if __name__ == "__main__":
         actDCF_cal, actDCF_estimated = evaluate_score_calibration(llrGMMTrain, llrGMMTest, LTR, LTE, pi, Cfn, Cfp)
         f.write("\nGMM: actual: " + str(actDCF) + " calibrated: " + str(actDCF_cal) + " estimated: " + str(actDCF_estimated))
 
-        """
         f.write("\n\n*********** SVM + LR ************\n\n")
         minDCF, actDCF, _ = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
@@ -418,7 +416,7 @@ if __name__ == "__main__":
         f.write("\n\n*********** SVM + LR + GMM ************\n\n")
         minDCF, actDCF, _ = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
-        """
+    """
     
     """
     # ROC plots
