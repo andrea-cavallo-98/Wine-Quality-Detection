@@ -8,9 +8,7 @@ from data_visualization import Z_score
 import logistic_regression as LR
 import gmm as GMM
 
-
-S = 0
-
+"""
 def optimal_threshold(llr, L):
 
     pi = 0.5
@@ -136,12 +134,13 @@ def analyze_scores(llr, L, name):
     print("actual DCF on test set with score calibration: " + str(actDCFcal))
     print("optimal estimated threshold was: " + str(opt_t))
 
+"""
 
 
 
-def k_fold_fusion3(D1, D2, D3, L, k, pi, Cfp, Cfn, pi_T):
+def k_fold_fusion3(D1, D2, D3, L, k, pi, Cfp, Cfn, pi_T, seed = 0):
 
-    np.random.seed(S)
+    np.random.seed(seed)
     idx = np.random.permutation(D1.shape[1])
 
     start_index = 0
@@ -187,9 +186,9 @@ def k_fold_fusion3(D1, D2, D3, L, k, pi, Cfp, Cfn, pi_T):
 
 
 
-def k_fold_fusion2(D1, D2, L, k, pi, Cfp, Cfn, pi_T):
+def k_fold_fusion2(D1, D2, L, k, pi, Cfp, Cfn, pi_T, seed = 0):
 
-    np.random.seed(S)
+    np.random.seed(seed)
     idx = np.random.permutation(D1.shape[1])
 
     start_index = 0
@@ -232,13 +231,16 @@ def k_fold_fusion2(D1, D2, L, k, pi, Cfp, Cfn, pi_T):
 
 
 
-def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T):
+def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T, seed=0):
 
-    np.random.seed(S)
+    np.random.seed(seed)
     idx = np.random.permutation(D.shape[1])
 
     start_index = 0
     elements = int(D.shape[1] / k)
+
+    min_actDCF_cal = 1
+    min_lambda = 0
 
     llr_cal = np.zeros([D.shape[1], ])
     opt_th_decisions = np.zeros([D.shape[1]])
@@ -262,7 +264,7 @@ def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T):
         LTE = L[idxTest]
 
         # Train a logistic regression model for score calibration
-        llr_cal[idxTest], _ = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0, pi_T, pi, Cfn, Cfp, calibration=True)
+        llr_cal[idxTest], _ = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0.1, pi_T, pi, Cfn, Cfp, calibration=False)
         
         # Estimate optimal threshold on training set and perform decisions on test set
         _, opt_t = min_DCF(DTR.reshape([DTR.shape[1],]), pi, Cfn, Cfp, LTR)
@@ -270,6 +272,8 @@ def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T):
 
         start_index += elements
 
+    # Subtract theoretical threshold to achieve calibrated scores
+    llr_cal -= np.log(pi / (1 - pi))
     # Calculate act DCF for calibrated scores
     actDCF_cal = act_DCF(llr_cal, pi, Cfn, Cfp, L)
 
@@ -277,17 +281,17 @@ def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T):
     M = confusion_matrix(L, opt_th_decisions, 2)
     _, actDCF_estimated = Bayes_risk(M, pi, Cfn, Cfp)
 
-    return actDCF_cal, actDCF_estimated
+    return actDCF_cal, actDCF_estimated, min_lambda
 
 
 def analyse_scores_kfold(llr, pi, Cfn, Cfp, L, k, pi_T, name):
     
     actDCF = act_DCF(llr, pi, Cfn, Cfp, L)
-    actDCF_cal, actDCF_estimated = k_fold_calibration(llr.reshape([1,llr.shape[0]]), L, k, pi, Cfp, Cfn, pi_T)
+    actDCF_cal, actDCF_estimated, min_lambda = k_fold_calibration(llr.reshape([1,llr.shape[0]]), L, k, pi, Cfp, Cfn, pi_T)
 
     print("\n\n******* "+name+" *********\n")
     print("act DCF: "+str(actDCF))
-    print("act DCF, calibrated scores: "+ str(actDCF_cal))
+    print("act DCF, calibrated scores: "+ str(actDCF_cal) + " with min lambda: " + str(min_lambda))
     print("act DCF, estimated threshold: "+ str(actDCF_estimated))
 
 
@@ -319,7 +323,7 @@ if __name__ == "__main__":
     Cfp = 1
     Cfn = 1
     pi_T = 0.5
-    (DNTR, LNTR), (DNTE, LNTE) = split_db_4to1(DN, L, seed = S)
+    (DNTR, LNTR), (DNTE, LNTE) = split_db_4to1(DN, L, seed = 0)
 
 
     ##################### SELECTED MODELS #######################
@@ -334,7 +338,7 @@ if __name__ == "__main__":
     #np.save("llrSVM.npy", llrSVM)
     llrSVM = np.load("../Data/llrSVM.npy")
     #analyze_scores(llrSVM, L, "RBF-SVM")
-    # analyse_scores_kfold(llrSVM, pi, Cfn, Cfp, L, k, pi_T, "SVM")
+    analyse_scores_kfold(llrSVM, pi, Cfn, Cfp, L, k, pi_T, "SVM")
 
     ###### Quadratic LR, lambda = 0, Z-normalized features, no PCA ######
 
@@ -342,21 +346,21 @@ if __name__ == "__main__":
     #np.save("llrLR.npy", llrLR)
     llrLR = np.load("../Data/llrLR.npy")
     #analyze_scores(llrLR, L, "Log Reg")
-    # analyse_scores_kfold(llrLR, pi, Cfn, Cfp, L, k, pi_T, "LR")
+    analyse_scores_kfold(llrLR, pi, Cfn, Cfp, L, k, pi_T, "LR")
    
     ###### GMM, Z-normalized features, 8 components ######
     #_, llrGMM = GMM.k_fold_cross_validation(DN, L, k, pi, Cfp, Cfn, False, False, 8, seed = 0, just_llr = True)
     #np.save("llrGMM.npy", llrGMM)
     llrGMM = np.load("../Data/llrGMM.npy")
     #analyze_scores(llrGMM, L, "GMM")
-    # analyse_scores_kfold(llrGMM, pi, Cfn, Cfp, L, k, pi_T, "GMM")
+    analyse_scores_kfold(llrGMM, pi, Cfn, Cfp, L, k, pi_T, "GMM")
 
 
 
     ###### Combined models ######
     #analyse_fusion_kfold2(llrSVM, llrLR, L, k, pi, Cfp, Cfn, pi_T, "SVM + LR")
     #analyse_fusion_kfold2(llrSVM, llrGMM, L, k, pi, Cfp, Cfn, pi_T, "SVM + GMM")
-    analyse_fusion_kfold3(llrSVM, llrLR, llrGMM, L, k, pi, Cfp, Cfn, pi_T, "SVM + LR + GMM")
+    # analyse_fusion_kfold3(llrSVM, llrLR, llrGMM, L, k, pi, Cfp, Cfn, pi_T, "SVM + LR + GMM")
 
     """
     minDCF, actDCF = combine_scores(llrSVM, llrGMM, L)

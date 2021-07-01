@@ -1,0 +1,35 @@
+**** min DCF for different Logistic Regression models ****
+
+Values of min DCF for values of lambda = [0, 1e-6, 1e-4, 1e-2, 1, 100]
+
+Raw features
+min DCF: 1.0
+min DCF: 1.0
+min DCF: 1.0
+min DCF: 1.0
+min DCF: 1.0
+min DCF: 1.0
+
+Z-normalized features - no PCA
+min DCF: 0.2644828016730133
+min DCF: 0.2644828016730133
+min DCF: 0.2575743388060012
+min DCF: 0.25737405580872713
+min DCF: 0.3922529496223235
+min DCF: 0.4453149385105188
+
+Z-normalized features - PCA = 10
+min DCF: 0.25775381318018187
+min DCF: 0.25775381318018187
+min DCF: 0.25775381318018187
+min DCF: 0.2531525063986516
+min DCF: 0.3905466425286639
+min DCF: 0.4479056120856483
+
+Gaussianized features
+min DCF: 0.2956046985870945
+min DCF: 0.294741140728718
+min DCF: 0.29349782549888676
+min DCF: 0.27799540129429634
+min DCF: 0.36417691491354015
+min DCF: 0.4478926066962149

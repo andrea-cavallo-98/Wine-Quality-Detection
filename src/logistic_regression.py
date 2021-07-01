@@ -56,6 +56,7 @@ def map_to_feature_space(D):
     phi = np.zeros([D.shape[0]**2+D.shape[0], D.shape[1]])
     for index in range(D.shape[1]):
         x = D[:, index].reshape(D.shape[0], 1)
+        # phi = [vec(x*x^T), x]^T
         phi[:, index] = np.concatenate((np.dot(x, x.T).reshape(x.shape[0]**2, 1), x)).reshape(phi.shape[0],)
     return phi
 

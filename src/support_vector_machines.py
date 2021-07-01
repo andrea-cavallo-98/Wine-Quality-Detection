@@ -71,7 +71,7 @@ def linear_SVM(DTR, LTR, DTE, LTE, C, K, pi, Cfp, Cfn, pi_T, rebalancing = True)
     return S, minDCF
 
 
-def kernel_SVM(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, d = 0, c = 0, gamma = 0, csi = 0, rebalancing = True, store_model = False):
+def kernel_SVM(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, d = 0, c = 0, gamma = 0, csi = 0, rebalancing = True):
         
     # Compute H_hat
     Z = np.ones(LTR.shape)
@@ -93,9 +93,6 @@ def kernel_SVM(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, d = 0, c = 0, ga
     optAlpha, _, _ = fmin_l_bfgs_b(obj_function_gradient, np.zeros(DTR.shape[1]),
                                         approx_grad = False, bounds = B, factr = 10000.0)
 
-    if store_model:
-        np.save("SVM_alpha.npy", optAlpha)
-
     # Compute scores
     S = np.sum((optAlpha * Z).reshape([DTR.shape[1], 1]) * kernel(DTR, DTE, type, d, c, gamma, csi), axis = 0)
 
@@ -105,7 +102,7 @@ def kernel_SVM(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, d = 0, c = 0, ga
 
 
 def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = True, 
-                            gamma = 0, seed = 0, type = "", just_llr = False, store_model = False):
+                            gamma = 0, seed = 0, type = "", just_llr = False):
 
     np.random.seed(seed)
     idx = np.random.permutation(D.shape[1])
@@ -135,7 +132,7 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, C, pi_T, K_SVM, r
             llr[idxTest], _ = classifier(DTR, LTR, DTE, LTE, C, K_SVM, pi, Cfp, Cfn, pi_T, rebalancing)
         else: # kernel SVM
             llr[idxTest], _ = classifier(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, gamma=gamma,
-                                     rebalancing=rebalancing, d = 2, csi=K_SVM**0.5, c = 1, store_model=store_model)
+                                     rebalancing=rebalancing, d = 2, csi=K_SVM**0.5, c = 1)
 
         start_index += elements
 
@@ -276,10 +273,9 @@ if __name__ == "__main__":
             minDCF, _ = k_fold_cross_validation(DN, L, kernel_SVM, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = True, type = "poly")
             DCF_kfold_z_bal.append(minDCF)
             f.write("5-fold: " + str(minDCF))
-            _, minDCF = kernel_SVM(DNTR, LNTR, DNTE, LNTE, C, "poly", pi, Cfn, Cfp, pi_T, d = 2, csi = K_SVM**0.5, rebalancing = True)
+            _, minDCF = kernel_SVM(DNTR, LNTR, DNTE, LNTE, C, "poly", pi, Cfn, Cfp, pi_T, d = 2, csi = K_SVM**0.5, rebalancing = True, c=1)
             DCF_single_split_z_bal.append(minDCF)
             f.write(" single split: " + str(minDCF) + "\n")
-        
         print("Finished Z-normalized features - rebalancing")
 
         img1 = "quad_SVM_C_kfold.png"

@@ -1,12 +1,10 @@
 
-from sys import float_repr_style
 import numpy as np
 from scipy.special import logsumexp
-from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_4to1
+from load_data import load, split_db_4to1
 from prediction_measurement import min_DCF, compute_llr
 from data_visualization import Z_score
 import matplotlib.pyplot as plt
-from pca import compute_pca
 
 def GAU_logpdf_ND(x, mu, C):
     M = x.shape[0]
@@ -56,14 +54,19 @@ def GMM_EM_estimation(X, gmm, t, psi, diag = False, tied = False):
             S = np.dot(gamma[g] * X, X.T)
             mu = (F / Z[g]).reshape([X.shape[0], 1])
             sigma = S / Z[g] - np.dot(mu, mu.T)
+            w = Z[g] / sum(Z)
+
             if diag:
                 sigma = sigma * np.eye(sigma.shape[0])
-            U, s, _ = np.linalg.svd(sigma)
-            # Add constraints on the covariance matrixes to avoid degenerate solutions
-            s[s<psi] = psi
-            covNew = np.dot(U, s.reshape([s.shape[0], 1])*U.T)
-            w = Z[g] / sum(Z)
-            curr_gmm[g] = (w, mu, covNew)
+            
+            if not tied:
+                U, s, _ = np.linalg.svd(sigma)
+                # Add constraints on the covariance matrixes to avoid degenerate solutions
+                s[s<psi] = psi
+                covNew = np.dot(U, s.reshape([s.shape[0], 1])*U.T)
+                curr_gmm[g] = (w, mu, covNew)
+            else: # if tied, constraints are added later
+                curr_gmm[g] = (w, mu, sigma)
 
         if tied:
             tot_sigma = np.zeros(curr_gmm[0][2].shape)
@@ -83,13 +86,12 @@ def GMM_EM_estimation(X, gmm, t, psi, diag = False, tied = False):
     return curr_gmm, ll
 
 
-def LBG(X, gmm, t, components, alpha, psi, diag, tied):
+def LBG(X, gmm, t, alpha, psi, diag, tied):
 
-    #for count in range(int(np.log2(components))):
     new_gmm = []
     for c in gmm:
 
-        U, s, Vh = np.linalg.svd(c[2])
+        U, s, _ = np.linalg.svd(c[2])
         d = U[:, 0:1] * s[0]**0.5 * alpha       
 
         new_gmm.append((c[0] / 2, c[1].reshape([X.shape[0], 1]) + d, c[2]))
@@ -104,8 +106,6 @@ def GMM_classifier(DTR, LTR, DTE, LTE, n_classes, components, pi, Cfn, Cfp, diag
 
     S = np.zeros([n_classes, DTE.shape[1]])
     all_gmm = []
-    all_llr = []
-    all_minDCF = []
 
     for count in range(int(np.log2(components))):
         for c in range(n_classes):
@@ -121,7 +121,7 @@ def GMM_classifier(DTR, LTR, DTE, LTE, n_classes, components, pi, Cfn, Cfp, diag
             else:
                 starting_gmm = all_gmm[c]
 
-            new_gmm, _ = LBG(DTR[:, LTR == c], starting_gmm, t, 2**(count+1), alpha, psi, diag, tied)
+            new_gmm, _ = LBG(DTR[:, LTR == c], starting_gmm, t, alpha, psi, diag, tied)
             all_gmm[c] = new_gmm
             logdens, _ = logpdf_GMM(DTE, new_gmm)
             S[c, :] = logdens
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     (DNTR, LNTR), (DNTE, LNTE) = split_db_4to1(DN, L)
     DG = np.load("../Data/gaussianized_features.npy")
     (DGTR, LGTR), (DGTE, LGTE) = split_db_4to1(DG, L)
-    components_val = [2, 4, 8, 16]
+    components_val=[2,4,8,16]
     k = 5
     pi = 0.5
     Cfn = 1
@@ -198,27 +198,22 @@ if __name__ == "__main__":
     DCF_z = np.zeros([4, len(components_val)])
     DCF_gaus = np.zeros([4, len(components_val)])
     
-    """
     with open(fileName, "w") as f:
-
-        f.write("**** min DCF for different GMM models *****\n\n")
-
-        for i, tied in enumerate([True, False]):
-            f.write("\nTied: " + str(tied) + "\n")
-            for j, diag in enumerate([False, True]):
-                f.write("\nDiag: " + str(diag) + "\n")
-                for t, components in enumerate(components_val):
-                    f.write("\ncomponents: " + str(components) + "\n")
-                    minDCF, _ = k_fold_cross_validation(DN, L, k, pi, Cfp, Cfn, diag, tied, components)
-                    DCF_z[2*i+j,t] = minDCF 
-                    f.write("\nZ-norm: " + str(minDCF) + "\n")
-
-                    minDCF, _ = k_fold_cross_validation(DG, L, k, pi, Cfp, Cfn, diag, tied, components)
-                    DCF_gaus[2*i+j,t] = minDCF 
-                    f.write("\nGaussianized: " + str(minDCF) + "\n")
-
-                    print("Finished tied: %s, diag: %s, components: %d" % (str(tied), str(diag), components))
-
+            f.write("**** min DCF for different GMM models *****\n\n")
+            for i, tied in enumerate([True, False]):
+                f.write("\nTied: " + str(tied) + "\n")
+                for j, diag in enumerate([False, True]):
+                    f.write("\nDiag: " + str(diag) + "\n")
+                    for t, components in enumerate(components_val):
+                        f.write("\ncomponents: " + str(components) + "\n")
+                        minDCF, _ = k_fold_cross_validation(DN, L, k, pi, Cfp, Cfn, diag, tied, components)
+                        DCF_z[2*i+j,t] = minDCF 
+                        f.write("\nZ-norm: " + str(minDCF) + "\n")
+                        minDCF, _ = k_fold_cross_validation(DG, L, k, pi, Cfp, Cfn, diag, tied, components)
+                        DCF_gaus[2*i+j,t] = minDCF 
+                        f.write("\nGaussianized: " + str(minDCF) + "\n")
+                        print("Finished tied: %s, diag: %s, components: %d" % (str(tied), str(diag), components))
+    
     plt.figure()
     plt.plot(components_val, DCF_z[2,:], marker='o', linestyle='dashed', color="red")
     plt.plot(components_val, DCF_gaus[2,:], marker='o', linestyle='dashed', color="blue")
@@ -234,7 +229,7 @@ if __name__ == "__main__":
     plt.ylabel("min DCF")
     plt.legend(["Z-normalized", "Gaussianized"])
     plt.savefig("../Images/GMM_notied_diag")
-
+    
     plt.figure()
     plt.plot(components_val, DCF_z[0,:], marker='o', linestyle='dashed', color="red")
     plt.plot(components_val, DCF_gaus[0,:], marker='o', linestyle='dashed', color="blue")
@@ -250,4 +245,4 @@ if __name__ == "__main__":
     plt.ylabel("min DCF")
     plt.legend(["Z-normalized", "Gaussianized"])
     plt.savefig("../Images/GMM_tied_diag")
-    """
+    

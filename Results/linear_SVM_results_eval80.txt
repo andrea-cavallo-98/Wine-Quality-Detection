@@ -1,0 +1,37 @@
+**** min DCF for different linear SVM models ****
+
+Values of min DCF for values of C = [0, 1e-1, 1, 10]
+
+ Rebalancing: False
+
+Raw features
+ single split: 0.6688021516116278
+ single split: 0.7534204174209793
+ single split: 0.8705755665147636
+
+Z-normalized features - no PCA
+ single split: 0.31889214890650686
+ single split: 0.31965166364941633
+ single split: 0.327085544249537
+
+Gaussianized features
+ single split: 0.31098227105312437
+ single split: 0.3152792517219135
+ single split: 0.3129304783902449
+
+ Rebalancing: True
+
+Raw features
+ single split: 0.8351618910876667
+ single split: 0.7115404623676052
+ single split: 0.8770470482968141
+
+Z-normalized features - no PCA
+ single split: 0.32415673054913957
+ single split: 0.3265679297500884
+ single split: 0.32829504546684146
+
+Gaussianized features
+ single split: 0.3328131177559981
+ single split: 0.3356456915745885
+ single split: 0.3311276192854319

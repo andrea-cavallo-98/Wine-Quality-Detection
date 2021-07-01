@@ -17,7 +17,9 @@ def evaluate_score_calibration(llrTrain, llrTest, LTR, LTE, pi, Cfn, Cfp):
     
     # Train score calibration on training llr and evaluate results on test llr
     s, minDCF = LR.linear_logistic_regression(llrTrain.reshape([1,llrTrain.shape[0]]), LTR, 
-        llrTest.reshape([1,llrTest.shape[0]]), LTE, 0, 0.5, pi, Cfn, Cfp, calibration=False)
+        llrTest.reshape([1,llrTest.shape[0]]), LTE, 0, 0.5, pi, Cfn, Cfp, calibration=True)
+    # Subtract theoretical threshold to achieve calibrated scores
+    s -= np.log(pi/(1-pi))
     actDCF_cal = act_DCF(s, pi, Cfn, Cfp, LTE)
 
     # Select optimal threshold on training llr and evaluate results on test llr
@@ -139,14 +141,26 @@ if __name__ == "__main__":
     Cfp = 1
     K_SVM = 1
     C_val = [1e-1, 1, 10]
-
+    use_80_data = False
+    
+    if use_80_data:
+        # Train only using 80% of data
+        (DTR, _), (_, _) = split_db_4to1(DTR, LTR)
+        (DNTR, _), (_, _) = split_db_4to1(DNTR, LTR)
+        (DNTR10, _), (_, _) = split_db_4to1(DNTR10, LTR)
+        (DGTR, _), (_, _) = split_db_4to1(DGTR, LTR)
+        (DGTR10, _), (_, _) = split_db_4to1(DGTR10, LTR)
+        (DGTR9, LTR), (_, _) = split_db_4to1(DGTR9, LTR)
     
     """
     #######################################
     # Gaussian models
     #######################################
 
-    fileName = "../Results/gaussian_results_eval.txt"
+    if use_80_data:
+        fileName = "../Results/gaussian_results_eval80.txt"
+    else:
+        fileName = "../Results/gaussian_results_eval.txt"
 
     with open(fileName, "w") as f:
         
@@ -190,8 +204,8 @@ if __name__ == "__main__":
 
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) + 
                     " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
-    """
     
+    """
     """
     ################################################
     # Logistic regression
@@ -201,11 +215,19 @@ if __name__ == "__main__":
 
     for LR_type in ["linear", "quadratic"]:
 
-        fileName = "../Results/LR_results_evalPCA.txt"
-        linear_or_quadratic = LR.linear_logistic_regression
-        if LR_type == "quadratic":
-            fileName = "../Results/Quad_LR_results_evalPCA.txt"
-            linear_or_quadratic = LR.quadratic_logistic_regression
+        if use_80_data:
+            fileName = "../Results/LR_results_eval80.txt"
+            linear_or_quadratic = LR.linear_logistic_regression
+            if LR_type == "quadratic":
+                fileName = "../Results/Quad_LR_results_eval80.txt"
+                linear_or_quadratic = LR.quadratic_logistic_regression
+        else:
+            fileName = "../Results/LR_results_eval.txt"
+            linear_or_quadratic = LR.linear_logistic_regression
+            if LR_type == "quadratic":
+                fileName = "../Results/Quad_LR_results_eval.txt"
+                linear_or_quadratic = LR.quadratic_logistic_regression
+
 
         with open(fileName, "w") as f:
             
@@ -246,7 +268,10 @@ if __name__ == "__main__":
     # Linear SVM
     ################################
 
-    fileName = "../Results/linear_SVM_results_eval.txt"
+    if use_80_data:
+        fileName = "../Results/linear_SVM_results_eval80.txt"
+    else:
+        fileName = "../Results/linear_SVM_results_eval.txt"
     linear_or_quadratic = SVM.linear_SVM
     doRebalancing = True
     with open(fileName, "w") as f:
@@ -306,7 +331,7 @@ if __name__ == "__main__":
 
         f.write("\nZ-normalized features - no PCA - rebalancing\n")
         for C in C_val:
-            _, minDCF = SVM.kernel_SVM(DNTR, LTR, DNTE, LTE, C, "poly", pi, Cfn, Cfp, pi_T, d = 2, csi = K_SVM**0.5, rebalancing = True)
+            _, minDCF = SVM.kernel_SVM(DNTR, LTR, DNTE, LTE, C, "poly", pi, Cfn, Cfp, pi_T, d = 2, csi = K_SVM**0.5, rebalancing = True, c=1)
             f.write(" single split: " + str(minDCF) + "\n")
         
         print("Finished Z-normalized features - rebalancing")
@@ -345,13 +370,13 @@ if __name__ == "__main__":
     #######################
 
     components = 16
-    fileName = "../Results/GMM_results_eval.txt"
+    fileName = "../Results/GMM_results_evalTied.txt"
 
     with open(fileName, "w") as f:
 
         f.write("**** min DCF for different GMM models *****\n\n")
 
-        for tied in [True, False]:
+        for tied in [True]:
             f.write("\nTied: " + str(tied) + "\n")
             for diag in [False, True]:
                 f.write("\nDiag: " + str(diag) + "\n")
@@ -360,8 +385,22 @@ if __name__ == "__main__":
                 _, minDCF = GMM.GMM_classifier(DGTR, LTR, DGTE, LTE, 2, components, pi, Cfn, Cfp, diag, tied, f=f, type="Gaussianized")
 
                 print("Finished tied: %s, diag: %s" % (str(tied), str(diag)))
+    
     """
+    # Load scores on training data
+    llrSVMTrain = np.load("../Data/llrSVM.npy")
+    llrLRTrain = np.load("../Data/llrLR.npy")
+    llrGMMTrain = np.load("../Data/llrGMM.npy")
+    llrSVMTest = np.load("../Data/llrSVMTest.npy")
+    llrLRTest = np.load("../Data/llrLRTest.npy")
+    llrGMMTest = np.load("../Data/llrGMMTest.npy")
 
+    actDCF_cal, actDCF_estimated = evaluate_score_calibration(llrSVMTrain, llrSVMTest, LTR, LTE, pi, Cfn, Cfp)
+
+    print("Calibrated: " + str(actDCF_cal))
+    print("Estimated: " + str(actDCF_estimated))
+
+    """
     ########################
     # Fusions of best models
     ########################
@@ -390,7 +429,7 @@ if __name__ == "__main__":
 
     # Evaluate performance of combined models 
     # (LR model trained on training set scores and evaluated on test set scores)
-    """
+    
     fileName = "../Results/fusions_results_eval2.txt"
     with open(fileName, "w") as f:
 

@@ -8,6 +8,6 @@ Z-normalized features - no PCA - no rebalancing
  single split: 0.26379871818881745
 
 Z-normalized features - no PCA - rebalancing
- single split: 0.4413977152131844
- single split: 0.4409633352061094
- single split: 0.4433667311733982
+ single split: 0.27795378404810955
+ single split: 0.28020631749797115
+ single split: 0.2750041617246187

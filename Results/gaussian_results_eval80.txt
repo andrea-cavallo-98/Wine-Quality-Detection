@@ -1,0 +1,13 @@
+*** min DCF for different gaussian models ***
+
+Gaussianized features - no PCA
+MVG: 0.3152792517219135 naive Bayes: 0.38249110431362754 tied MVG: 0.32409430467985934 tied naive Bayes: 0.38799758619972113
+
+Gaussianized features - PCA = 10
+MVG: 0.30991843019747384 naive Bayes: 0.3321498428948957 tied MVG: 0.318312108537778 tied naive Bayes: 0.3140151278689889
+
+Gaussianized features - PCA = 9
+MVG: 0.3289999375741307 naive Bayes: 0.3444191272863475 tied MVG: 0.32415673054913957 tied naive Bayes: 0.3170479846848534
+
+Raw features - no PCA
+MVG: 0.33201198576690183 naive Bayes: 0.37560345006970886 tied MVG: 0.3147122167426181 tied naive Bayes: 0.3698212539276276
