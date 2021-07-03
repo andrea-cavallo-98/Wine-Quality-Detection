@@ -32,7 +32,7 @@ def logreg_obj_wrap(DTR, LTR, l, pi_T):
     return logreg_obj
 
 # Train a linear logistic regression model and evaluate it on test data
-def linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp, calibration=False):
+def linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp):
     # Define objective function
     logreg_obj = logreg_obj_wrap(DTR, LTR, l, pi_T)
     # Optimize objective function
@@ -41,10 +41,7 @@ def linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp, calibr
     w, b = optV[0:-1], optV[-1]
 
     # Compute scores
-    if calibration:
-        s = np.dot(w.T, DTE) - b
-    else:
-        s = np.dot(w.T, DTE) + b
+    s = np.dot(w.T, DTE) + b
 
     minDCF, _ = min_DCF(s, pi, Cfn, Cfp, LTE)
 
@@ -123,7 +120,7 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, l, pi_T, seed = 0
 if __name__ == "__main__":
 
     ### Train and evaluate different logistic regression models using cross validation and single split
-    
+
     for LR_type in ["linear", "quadratic"]:
         D, L = load("../Data/Train.txt")    
         (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)

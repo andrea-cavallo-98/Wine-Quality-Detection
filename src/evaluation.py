@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.special import logsumexp
-from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_4to1
+from load_data import load, split_db_4to1
 from prediction_measurement import Bayes_error_plots, act_DCF, min_DCF, confusion_matrix, Bayes_risk, ROC_curve
 import support_vector_machines as SVM
 from data_visualization import Z_score, Z_score_eval
@@ -10,18 +9,14 @@ import gmm as GMM
 from pca import compute_pca, compute_pca_eval
 import gaussian_models as GM
 import logistic_regression as LR
-from sklearn.isotonic import IsotonicRegression
 
-
-
+# Evaluate score calibration by training a logistic regression model on training data
+# and evaluating it on test data
 def evaluate_score_calibration(llrTrain, llrTest, LTR, LTE, pi, Cfn, Cfp):
     
     # Train score calibration on training llr and evaluate results on test llr
-    s, minDCF = LR.linear_logistic_regression(llrTrain.reshape([1,llrTrain.shape[0]]), LTR, 
-        llrTest.reshape([1,llrTest.shape[0]]), LTE, 0, 0.5, pi, Cfn, Cfp, calibration=True)
-    #iso_reg = IsotonicRegression().fit(llrTrain.reshape([llrTrain.shape[0],1]), 2 * LTR.reshape([LTR.shape[0],]) - 1)
-    #s = iso_reg.predict(llrTest.reshape([llrTest.shape[0],1]))
-    #s = np.nan_to_num(s, nan=1)
+    s, _ = LR.linear_logistic_regression(llrTrain.reshape([1,llrTrain.shape[0]]), LTR, 
+        llrTest.reshape([1,llrTest.shape[0]]), LTE, 0, 0.5, pi, Cfn, Cfp)
 
     # Subtract theoretical threshold to achieve calibrated scores
     s -= np.log(pi/(1-pi))
@@ -36,7 +31,8 @@ def evaluate_score_calibration(llrTrain, llrTest, LTR, LTE, pi, Cfn, Cfp):
 
     return actDCF_cal, actDCF_estimated
 
-
+# Evaluate fusion of 2 models by training a logistic regression model on training data
+# and evaluating it on test data
 def evaluate_model_fusion(llrTrain1, llrTrain2, llrTest1, llrTest2, LTR, LTE):
     
     # Define DTR and DTE as combinations of llr from different models
@@ -52,7 +48,8 @@ def evaluate_model_fusion(llrTrain1, llrTrain2, llrTest1, llrTest2, LTR, LTE):
 
     return minDCF, actDCF, s
 
-
+# Evaluate fusion of 3 models by training a logistic regression model on training data
+# and evaluating it on test data
 def evaluate_model_fusion3(llrTrain1, llrTrain2, llrTrain3, llrTest1, llrTest2, llrTest3, LTR, LTE):
     
     # Define DTR and DTE as combinations of llr from different models
@@ -81,7 +78,6 @@ def plot_ROC_curve(FPR1, TPR1, FPR2, TPR2, FPR3, TPR3, l1, l2, l3, figName):
     plt.ylabel("TPR")
     plt.legend([l1, l2, l3])
     plt.savefig("../Images/" + figName +".png")   
-    #plt.show()
 
 
 def plot_Bayes_error(D1, D2, D3, D4, D5, D6, l1, l2, l3, l4, l5, l6, figName):
@@ -98,7 +94,6 @@ def plot_Bayes_error(D1, D2, D3, D4, D5, D6, l1, l2, l3, l4, l5, l6, figName):
     plt.ylim([0, 1.1])
     plt.xlim([-3, 3])
     plt.legend()
-    # plt.show()
     plt.savefig("../Images/" + figName +".png")   
 
 
@@ -115,11 +110,12 @@ def plot_Bayes_error4(D1, D2, D3, D4, l1, l2, l3, l4, figName):
     plt.ylim([0, 1.1])
     plt.xlim([-3, 3])
     plt.legend()
-    # plt.show()
     plt.savefig("../Images/" + figName +".png")   
 
 
 if __name__ == "__main__":
+
+    ### Test the performances of different models on the test dataset
 
     # Training and test data, raw features
     DTR, LTR = load("../Data/Train.txt")
@@ -157,7 +153,6 @@ if __name__ == "__main__":
         (DGTR10, _), (_, _) = split_db_4to1(DGTR10, LTR)
         (DGTR9, LTR), (_, _) = split_db_4to1(DGTR9, LTR)
     
-    """
     #######################################
     # Gaussian models
     #######################################
@@ -210,8 +205,6 @@ if __name__ == "__main__":
         f.write("MVG: " + str(DCF_MVG) + " naive Bayes: " + str(DCF_naive_Bayes) + 
                     " tied MVG: " + str(DCF_tied_MVG) + " tied naive Bayes: " + str(DCF_tied_naive_Bayes))
     
-    """
-    """
     ################################################
     # Logistic regression
     ################################################
@@ -266,9 +259,8 @@ if __name__ == "__main__":
                 _, minDCF = linear_or_quadratic(DGTR, LTR, DGTE, LTE, l, pi_T, pi, Cfn, Cfp)
                 DCF_single_split_gau.append(minDCF)
                 f.write("min DCF: " + str(minDCF) + "\n")
-    """
+    
 
-    """
     ################################
     # Linear SVM
     ################################
@@ -315,8 +307,8 @@ if __name__ == "__main__":
             
             print("Finished Gaussianized features")
 
-    """
-    """
+    
+    
     ###############################
     # Quadratic kernel SVM
     ###############################
@@ -340,8 +332,8 @@ if __name__ == "__main__":
             f.write(" single split: " + str(minDCF) + "\n")
         
         print("Finished Z-normalized features - rebalancing")
-    """
-    """
+    
+    
     ###########################
     # RBF kernel SVM
     ###########################
@@ -368,8 +360,8 @@ if __name__ == "__main__":
                 f.write(" single split: " + str(minDCF) + "\n")
             
             print("Finished Z-normalized features - rebalancing")
-    """
-    """
+    
+    
     #######################
     # GMM
     #######################
@@ -390,8 +382,8 @@ if __name__ == "__main__":
                 _, minDCF = GMM.GMM_classifier(DGTR, LTR, DGTE, LTE, 2, components, pi, Cfn, Cfp, diag, tied, f=f, type="Gaussianized")
 
                 print("Finished tied: %s, diag: %s" % (str(tied), str(diag)))
+
     
-    """
     # Load scores on training data
     llrSVMTrain = np.load("../Data/llrSVM.npy")
     llrLRTrain = np.load("../Data/llrLR.npy")
@@ -405,7 +397,7 @@ if __name__ == "__main__":
     print("Calibrated: " + str(actDCF_cal))
     print("Estimated: " + str(actDCF_estimated))
 
-    """
+    
     ########################
     # Fusions of best models
     ########################
@@ -460,10 +452,11 @@ if __name__ == "__main__":
         f.write("\n\n*********** SVM + LR + GMM ************\n\n")
         minDCF, actDCF, _ = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
-    """
     
-    """
-    # ROC plots
+    
+    
+    ### ROC plots
+
     FPR_SVM, TPR_SVM = ROC_curve(llrSVMTest, LTE)
     FPR_LR, TPR_LR = ROC_curve(llrLRTest, LTE)
     FPR_GMM, TPR_GMM = ROC_curve(llrGMMTest, LTE)
@@ -505,9 +498,10 @@ if __name__ == "__main__":
     plot_ROC_curve(FPR_SVM, TPR_SVM, FPR_LR, TPR_LR, FPR_GMM, TPR_GMM, "SVM", "LR", "GMM", "ROC_eval1")
     plot_ROC_curve(FPR_SVMLR, TPR_SVMLR, FPR_SVMGMM, TPR_SVMGMM, FPR_SVMLRGMM, TPR_SVMLRGMM, "SVM+LR", "SVM+GMM", "SVM+LR+GMM", "ROC_eval2")
     plot_ROC_curve(FPR_SVM, TPR_SVM, FPR_LR, TPR_LR, FPR_SVMLRGMM, TPR_SVMLRGMM, "SVM", "LR", "SVM+LR+GMM", "ROC_eval3")
-    """
-    """
-    # min DCF plots
+    
+    
+    ### min DCF plots
+
     DCF_SVM, minDCF_SVM = Bayes_error_plots(llrSVMTest, LTE)
     DCF_LR, minDCF_LR = Bayes_error_plots(llrLRTest, LTE)
     DCF_GMM, minDCF_GMM = Bayes_error_plots(llrGMMTest, LTE)
@@ -532,8 +526,8 @@ if __name__ == "__main__":
     np.save("../Data/minDCF_SVMGMM.npy", minDCF_SVMGMM)
     np.save("../Data/DCF_SVMLRGMM.npy", DCF_SVMLRGMM)
     np.save("../Data/minDCF_SVMLRGMM.npy", minDCF_SVMLRGMM)
-    """
-    """
+
+    
     DCF_SVM = np.load("../Data/DCF_SVM.npy")
     minDCF_SVM = np.load("../Data/minDCF_SVM.npy")
     DCF_LR = np.load("../Data/DCF_LR.npy")
@@ -554,4 +548,4 @@ if __name__ == "__main__":
         "SVM+LR: act DCF", "SVM+LR: min DCF", "SVM+GMM: act DCF", "SVM+GMM: min DCF", "SVM+LR+GMM: act DCF", "SVM+LR+GMM: min DCF", "Bayes_error2_eval")
     plot_Bayes_error4(DCF_SVM, DCF_LR, DCF_SVMLRGMM, minDCF_SVMLRGMM, 
         "SVM: act DCF", "LR: act DCF", "SVM+LR+GMM: act DCF", "SVM+LR+GMM: min DCF", "Bayes_error3_eval")
-    """
+    
