@@ -1,14 +1,13 @@
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
-from scipy.special import logsumexp
-from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_4to1
-from prediction_measurement import min_DCF, compute_llr
+from load_data import load, split_db_4to1
+from prediction_measurement import min_DCF
 from data_visualization import Z_score
 import matplotlib.pyplot as plt
 from pca import compute_pca
 
 
-
+# Compute objective function and its derivatives (required by the optimization algorithm)
 def logreg_obj_wrap(DTR, LTR, l, pi_T):
 
     def logreg_obj(v):
@@ -32,11 +31,11 @@ def logreg_obj_wrap(DTR, LTR, l, pi_T):
 
     return logreg_obj
 
-
+# Train a linear logistic regression model and evaluate it on test data
 def linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp, calibration=False):
-    
+    # Define objective function
     logreg_obj = logreg_obj_wrap(DTR, LTR, l, pi_T)
-
+    # Optimize objective function
     optV, _, _ = fmin_l_bfgs_b(logreg_obj, np.zeros(DTR.shape[0] + 1), approx_grad = False)   
 
     w, b = optV[0:-1], optV[-1]
@@ -51,7 +50,7 @@ def linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp, calibr
 
     return s, minDCF
 
-
+# Map features to the quadratic feature space
 def map_to_feature_space(D):
     phi = np.zeros([D.shape[0]**2+D.shape[0], D.shape[1]])
     for index in range(D.shape[1]):
@@ -60,6 +59,7 @@ def map_to_feature_space(D):
         phi[:, index] = np.concatenate((np.dot(x, x.T).reshape(x.shape[0]**2, 1), x)).reshape(phi.shape[0],)
     return phi
 
+# Train a quadratic logistic regression model and evaluate it on test data
 def quadratic_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp):
 
     # Map training features to expanded feature space
@@ -67,9 +67,7 @@ def quadratic_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp):
 
     # Train a linear regression model on expanded feature space
     logreg_obj = logreg_obj_wrap(phi, LTR, l, pi_T)
-
     optV, _, _ = fmin_l_bfgs_b(logreg_obj, np.zeros(phi.shape[0] + 1), approx_grad = False)   
-
     w, b = optV[0:-1], optV[-1]
 
     # Map test features to expanded feature space
@@ -77,12 +75,11 @@ def quadratic_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp):
 
     # Compute scores
     s = np.dot(w.T, phi_test) + b
-
     minDCF, _ = min_DCF(s, pi, Cfn, Cfp, LTE)
 
     return s, minDCF
 
-
+# Perform k-fold cross validation on test data for the specified model
 def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, l, pi_T, seed = 0, just_llr = False):
 
     np.random.seed(seed)
@@ -94,7 +91,7 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, l, pi_T, seed = 0
     llr = np.zeros([D.shape[1], ])
 
     for count in range(k):
-
+        # Define training and test partitions
         if start_index + elements > D.shape[1]:
             end_index = D.shape[1]
         else:
@@ -109,12 +106,14 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, l, pi_T, seed = 0
         DTE = D[:, idxTest]
         LTE = L[idxTest]
 
+        # Train the classifier and compute llr on the current partition
         llr[idxTest], _ = classifier(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp)
         start_index += elements
 
     if just_llr:
         minDCF = 0
     else:
+        # Evaluate results after all k-fold iterations (when all llr are available)
         minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, L)
 
     return minDCF, llr
@@ -123,6 +122,8 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, l, pi_T, seed = 0
 
 if __name__ == "__main__":
 
+    ### Train and evaluate different logistic regression models using cross validation and single split
+    
     for LR_type in ["linear", "quadratic"]:
         D, L = load("../Data/Train.txt")    
         (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
@@ -153,6 +154,7 @@ if __name__ == "__main__":
             
             f.write("**** min DCF for different Logistic Regression models ****\n\n")
             
+            ### Raw features
             f.write("Values of min DCF for values of lambda = [0, 1e-6, 1e-4, 1e-2, 1, 100]\n")
             f.write("\nRaw features\n")
             DCF_kfold_raw = []
@@ -165,6 +167,7 @@ if __name__ == "__main__":
                 DCF_single_split_raw.append(minDCF)
                 f.write(" single split: " + str(minDCF) + "\n")
             
+            ### Z-normalized features - no PCA
             f.write("\nZ-normalized features - no PCA\n")
             DCF_kfold_z = []
             DCF_single_split_z = []
@@ -176,6 +179,7 @@ if __name__ == "__main__":
                 DCF_single_split_z.append(minDCF)
                 f.write(" single split: " + str(minDCF) + "\n")
             
+            ### Z-normalized features - PCA = 10
             f.write("\nZ-normalized features - PCA = 10\n")
             DCF_kfold_z = []
             DCF_single_split_z = []
@@ -187,6 +191,7 @@ if __name__ == "__main__":
                 DCF_single_split_z.append(minDCF)
                 f.write(" single split: " + str(minDCF) + "\n")
             
+            ### Gaussianized features
             f.write("\nGaussianized features\n")
             DCF_kfold_gau = []
             DCF_single_split_gau = []
@@ -198,7 +203,8 @@ if __name__ == "__main__":
                 DCF_single_split_gau.append(minDCF)
                 f.write(" single split: " + str(minDCF) + "\n")
             
-            
+            ### Plot min DCF for different values of lambda
+
             plt.figure()
             plt.plot(l_val, DCF_kfold_raw)
             plt.plot(l_val, DCF_kfold_z)

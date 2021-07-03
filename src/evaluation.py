@@ -10,6 +10,7 @@ import gmm as GMM
 from pca import compute_pca, compute_pca_eval
 import gaussian_models as GM
 import logistic_regression as LR
+from sklearn.isotonic import IsotonicRegression
 
 
 
@@ -18,6 +19,10 @@ def evaluate_score_calibration(llrTrain, llrTest, LTR, LTE, pi, Cfn, Cfp):
     # Train score calibration on training llr and evaluate results on test llr
     s, minDCF = LR.linear_logistic_regression(llrTrain.reshape([1,llrTrain.shape[0]]), LTR, 
         llrTest.reshape([1,llrTest.shape[0]]), LTE, 0, 0.5, pi, Cfn, Cfp, calibration=True)
+    #iso_reg = IsotonicRegression().fit(llrTrain.reshape([llrTrain.shape[0],1]), 2 * LTR.reshape([LTR.shape[0],]) - 1)
+    #s = iso_reg.predict(llrTest.reshape([llrTest.shape[0],1]))
+    #s = np.nan_to_num(s, nan=1)
+
     # Subtract theoretical threshold to achieve calibrated scores
     s -= np.log(pi/(1-pi))
     actDCF_cal = act_DCF(s, pi, Cfn, Cfp, LTE)

@@ -1,4 +1,3 @@
-
 import numpy as np
 from scipy.special import logsumexp
 from load_data import load, split_db_4to1
@@ -32,13 +31,14 @@ def logpdf_GMM(X, gmm):
     gamma = np.exp(logGamma)
     return logdens, gamma
 
-
+# Tune GMM parameters using EM algorithm
 def GMM_EM_estimation(X, gmm, t, psi, diag = False, tied = False):
 
     curr_gmm = gmm
     ll = t + 1
     prev_ll = 0
 
+    # Stop condition on log-likelihood variation
     while abs(ll - prev_ll) >= t :
         # E-step: compute posterior probabilities
         logdens, gamma = logpdf_GMM(X, curr_gmm)
@@ -50,6 +50,7 @@ def GMM_EM_estimation(X, gmm, t, psi, diag = False, tied = False):
         Z = np.sum(gamma, axis = 1)
         
         for g in range(len(gmm)):
+            # Compute statistics
             F = np.sum(gamma[g] * X, axis = 1)
             S = np.dot(gamma[g] * X, X.T)
             mu = (F / Z[g]).reshape([X.shape[0], 1])
@@ -57,9 +58,10 @@ def GMM_EM_estimation(X, gmm, t, psi, diag = False, tied = False):
             w = Z[g] / sum(Z)
 
             if diag:
+                # Keep only the diagonal of the matrix
                 sigma = sigma * np.eye(sigma.shape[0])
             
-            if not tied:
+            if not tied: # If tied hypothesis, add constraints only at the end
                 U, s, _ = np.linalg.svd(sigma)
                 # Add constraints on the covariance matrixes to avoid degenerate solutions
                 s[s<psi] = psi
@@ -69,6 +71,7 @@ def GMM_EM_estimation(X, gmm, t, psi, diag = False, tied = False):
                 curr_gmm[g] = (w, mu, sigma)
 
         if tied:
+            # Compute tied covariance matrix
             tot_sigma = np.zeros(curr_gmm[0][2].shape)
             for g in range(len(gmm)):
                 tot_sigma += Z[g] * curr_gmm[g][2] 
@@ -80,68 +83,76 @@ def GMM_EM_estimation(X, gmm, t, psi, diag = False, tied = False):
             for g in range(len(gmm)):
                 curr_gmm[g][2][:,:] = tot_sigma 
 
+        # Compute log-likelihood of training data
         logdens, _ = logpdf_GMM(X, curr_gmm)
         ll = sum(logdens) / X.shape[1]
 
     return curr_gmm, ll
 
-
+# LBG algorithm: from a GMM with G component, train a GMM with 2G components
 def LBG(X, gmm, t, alpha, psi, diag, tied):
 
     new_gmm = []
     for c in gmm:
 
+        # Compute direction along which to move the means
         U, s, _ = np.linalg.svd(c[2])
         d = U[:, 0:1] * s[0]**0.5 * alpha       
 
+        # Create two components from the original one
         new_gmm.append((c[0] / 2, c[1].reshape([X.shape[0], 1]) + d, c[2]))
         new_gmm.append((c[0] / 2, c[1].reshape([X.shape[0], 1]) - d, c[2]))
 
+    # Tune components using EM algorithm
     gmm, ll = GMM_EM_estimation(X, new_gmm, t, psi, diag, tied)
 
     return gmm, ll
 
-
+# Train a GMM classifier (one GMM for each class) and evaluate it on training data
 def GMM_classifier(DTR, LTR, DTE, LTE, n_classes, components, pi, Cfn, Cfp, diag, tied, t = 1e-6, psi = 0.01, alpha = 0.1, f=0, type=""):
 
     S = np.zeros([n_classes, DTE.shape[1]])
     all_gmm = []
 
+    # Repeat until the desired number of components is reached, but analyze also
+    # intermediate models with less components
     for count in range(int(np.log2(components))):
+        # Train one GMM for each class
         for c in range(n_classes):
             if count == 0:
+                # Start from max likelihood solution for one component
                 covNew = np.cov(DTR[:, LTR == c])
                 # Impose the constraint on the covariance matrix
                 U, s, _ = np.linalg.svd(covNew)
                 s[s<psi] = psi
                 covNew = np.dot(U, s.reshape([s.shape[0], 1])*U.T)
-                # Start from max likelihood solution for one component
                 starting_gmm = [(1.0, np.mean(DTR[:, LTR == c], axis = 1), covNew)]
                 all_gmm.append(starting_gmm)
             else:
                 starting_gmm = all_gmm[c]
 
+            # Train the new components and compute log-densities
             new_gmm, _ = LBG(DTR[:, LTR == c], starting_gmm, t, alpha, psi, diag, tied)
             all_gmm[c] = new_gmm
             logdens, _ = logpdf_GMM(DTE, new_gmm)
             S[c, :] = logdens
 
+        # Compute minDCF for the model with the current number of components
         llr = compute_llr(S)
         minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, LTE)
 
         if f == 0:
             print("Components: %d,      min DCF: %f" % (2**(count + 1), minDCF))
         else:
+            # Save results on file
             print("Components: %d,      min DCF: %f" % (2**(count + 1), minDCF))
             f.write("\ncomponents: " + str(2**(count + 1)) + "\n")
             f.write("\n" + type + ": " + str(minDCF) + "\n")
 
-    
     return llr, minDCF
 
 
-
-
+# Perform k-fold cross validation on test data for the specified model
 def k_fold_cross_validation(D, L, k, pi, Cfp, Cfn, diag, tied, components, seed = 0, just_llr = False):
 
     np.random.seed(seed)
@@ -153,7 +164,7 @@ def k_fold_cross_validation(D, L, k, pi, Cfp, Cfn, diag, tied, components, seed 
     llr = np.zeros([D.shape[1], ])
 
     for count in range(k):
-
+        # Define training and test partitions
         if start_index + elements > D.shape[1]:
             end_index = D.shape[1]
         else:
@@ -168,12 +179,14 @@ def k_fold_cross_validation(D, L, k, pi, Cfp, Cfn, diag, tied, components, seed 
         DTE = D[:, idxTest]
         LTE = L[idxTest]
 
+        # Train the classifier and compute llr on the current partition
         llr[idxTest], _ = GMM_classifier(DTR, LTR, DTE, LTE, 2, components, pi, Cfn, Cfp, diag, tied)
         start_index += elements
 
     if just_llr:
         minDCF = 0
     else:
+        # Evaluate results after all k-fold iterations (when all llr are available)
         minDCF, _ = min_DCF(llr, pi, Cfn, Cfp, L)
 
     return minDCF, llr
@@ -181,6 +194,9 @@ def k_fold_cross_validation(D, L, k, pi, Cfp, Cfn, diag, tied, components, seed 
 
 
 if __name__ == "__main__":
+
+    ### Train and evaluate different GMM models using cross validation and single split
+    ### Plot figures for hyperparameter optimization
 
     D, L = load("../Data/Train.txt")  
     (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)

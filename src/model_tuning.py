@@ -7,6 +7,7 @@ import support_vector_machines as SVM
 from data_visualization import Z_score
 import logistic_regression as LR
 import gmm as GMM
+from sklearn.isotonic import IsotonicRegression
 
 """
 def optimal_threshold(llr, L):
@@ -231,6 +232,62 @@ def k_fold_fusion2(D1, D2, L, k, pi, Cfp, Cfn, pi_T, seed = 0):
 
 
 
+
+def k_fold_calibration_isotonic(D, L, k, pi, Cfp, Cfn, pi_T, seed=0):
+
+    np.random.seed(seed)
+    idx = np.random.permutation(D.shape[1])
+
+    start_index = 0
+    elements = int(D.shape[1] / k)
+
+    min_actDCF_cal = 1
+    min_lambda = 0
+
+    llr_cal = np.zeros([D.shape[1], ])
+    opt_th_decisions = np.zeros([D.shape[1]])
+
+
+    for count in range(k):
+
+        if start_index + elements > D.shape[1]:
+            end_index = D.shape[1]
+        else:
+            end_index = start_index + elements 
+
+        # Define training and test partitions
+        idxTrain = np.concatenate((idx[0:start_index], idx[end_index:]))
+        idxTest = idx[start_index:end_index]
+
+        DTR = D[:, idxTrain]
+        LTR = L[idxTrain]
+    
+        DTE = D[:, idxTest]
+        LTE = L[idxTest]
+
+        # Train a logistic regression model for score calibration
+        iso_reg = IsotonicRegression().fit(DTR.reshape([DTR.shape[1],1]), 2 * LTR.reshape([LTR.shape[0],]) - 1)
+        llr_cal[idxTest] = iso_reg.predict(DTE.reshape([DTE.shape[1],1]))
+        
+        # Estimate optimal threshold on training set and perform decisions on test set
+        _, opt_t = min_DCF(DTR.reshape([DTR.shape[1],]), pi, Cfn, Cfp, LTR)
+        opt_th_decisions[idxTest] = 1 * (DTE.reshape([DTE.shape[1],]) > opt_t)
+
+        start_index += elements
+
+    # Subtract theoretical threshold to achieve calibrated scores
+    llr_cal -= np.log(pi / (1 - pi))
+    # Calculate act DCF for calibrated scores
+    actDCF_cal = act_DCF(llr_cal, pi, Cfn, Cfp, L)
+
+    # Calculate act DCF for optimal estimated threshold
+    M = confusion_matrix(L, opt_th_decisions, 2)
+    _, actDCF_estimated = Bayes_risk(M, pi, Cfn, Cfp)
+
+    return actDCF_cal, actDCF_estimated, min_lambda
+
+
+
 def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T, seed=0):
 
     np.random.seed(seed)
@@ -264,7 +321,7 @@ def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T, seed=0):
         LTE = L[idxTest]
 
         # Train a logistic regression model for score calibration
-        llr_cal[idxTest], _ = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0.1, pi_T, pi, Cfn, Cfp, calibration=False)
+        llr_cal[idxTest], _ = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0, pi_T, pi, Cfn, Cfp, calibration=True)
         
         # Estimate optimal threshold on training set and perform decisions on test set
         _, opt_t = min_DCF(DTR.reshape([DTR.shape[1],]), pi, Cfn, Cfp, LTR)
@@ -323,7 +380,7 @@ if __name__ == "__main__":
     Cfp = 1
     Cfn = 1
     pi_T = 0.5
-    (DNTR, LNTR), (DNTE, LNTE) = split_db_4to1(DN, L, seed = 0)
+    # (DNTR, LNTR), (DNTE, LNTE) = split_db_4to1(DN, L, seed = 0)
 
 
     ##################### SELECTED MODELS #######################

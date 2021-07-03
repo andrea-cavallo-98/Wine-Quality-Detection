@@ -1,13 +1,11 @@
-
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
-from load_data import load, attributes_names, class_names, n_attr, n_class, split_db_4to1
+from load_data import load, split_db_4to1
 from prediction_measurement import min_DCF
 from data_visualization import Z_score
 import matplotlib.pyplot as plt
-from pca import compute_pca
 
-
+# Compute objective function and its gradient (required for optimization algorithm)
 def obj_function_gradient_wrapper(H_hat):
     def obj_function_gradient(alpha):
         obj_function = 1/2 * np.dot(np.dot(alpha.T, H_hat), alpha) - sum(alpha)
@@ -16,23 +14,24 @@ def obj_function_gradient_wrapper(H_hat):
 
     return obj_function_gradient
 
-
+# Compute the kernel dot-product
 def kernel(x1, x2, type, d = 0, c = 0, gamma = 0, csi = 0):
+    
     if type == "poly":
+        # Polynomial kernel of degree d
         return (np.dot(x1.T, x2) + c) ** d + csi
-
     else: 
         if type == "RBF":
+            # RBF kernel
             k = np.zeros([x1.shape[1], x2.shape[1]])
             for index1 in range(x1.shape[1]):
                 for index2 in range(x2.shape[1]):
                     k[index1, index2] = np.exp(-gamma * ((x1[:, index1] - x2[:, index2]) * (x1[:, index1] - x2[:, index2])).sum()) + csi
             return k
-
         else:
             return 0
 
-
+# Train a linear SVM model and evaluate it on test data
 def linear_SVM(DTR, LTR, DTE, LTE, C, K, pi, Cfp, Cfn, pi_T, rebalancing = True):
     
     D_hat = np.concatenate((DTR, K * np.array(np.ones([1, DTR.shape[1]]))))
@@ -43,10 +42,11 @@ def linear_SVM(DTR, LTR, DTE, LTE, C, K, pi, Cfp, Cfn, pi_T, rebalancing = True)
     ZiZj = np.dot(Z.reshape([Z.shape[0], 1]), Z.reshape([Z.shape[0], 1]).T)
     H_hat = ZiZj * np.dot(D_hat.T, D_hat)
 
-    # Optimize the objective function
+    # Define the objective function and the bounds
     obj_function_gradient = obj_function_gradient_wrapper(H_hat)
     B = np.zeros([DTR.shape[1], 2])
     if rebalancing:
+        # To rebalance classes, use two different values of C based on the empirical prior
         pi_T_emp = sum(LTR == 1) / DTR.shape[1]
         Ct = C * pi_T / pi_T_emp
         Cf = C * (1 - pi_T) / (1 - pi_T_emp)
@@ -54,6 +54,7 @@ def linear_SVM(DTR, LTR, DTE, LTE, C, K, pi, Cfp, Cfn, pi_T, rebalancing = True)
         B[LTR == 0, 1] = Cf
     else:
         B[:, 1] = C
+    # Optimize the objective function
     optAlpha, _, _ = fmin_l_bfgs_b(obj_function_gradient, np.zeros(DTR.shape[1]),
                                         approx_grad = False, bounds = B, factr = 10000.0)
 
@@ -63,14 +64,13 @@ def linear_SVM(DTR, LTR, DTE, LTE, C, K, pi, Cfp, Cfn, pi_T, rebalancing = True)
     # Compute extended data matrix for test set
     T_hat = np.concatenate((DTE, K * np.array(np.ones([1, DTE.shape[1]]))))
     
-    # Compute scores, predictions and accuracy
+    # Compute scores and minDCF
     S = np.dot(w_hat.T, T_hat)
-    
     minDCF, _ = min_DCF(S, pi, Cfn, Cfp, LTE)
 
     return S, minDCF
 
-
+# Train a kernel SVM model and evaluate it on test data
 def kernel_SVM(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, d = 0, c = 0, gamma = 0, csi = 0, rebalancing = True):
         
     # Compute H_hat
@@ -79,10 +79,11 @@ def kernel_SVM(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, d = 0, c = 0, ga
     ZiZj = np.dot(Z.reshape([Z.shape[0], 1]), Z.reshape([Z.shape[0], 1]).T)
     H_hat = ZiZj * kernel(DTR, DTR, type, d, c, gamma, csi)
 
-    # Optimize the objective function
+    # Define the objective function and the bounds
     obj_function_gradient = obj_function_gradient_wrapper(H_hat)
     B = np.zeros([DTR.shape[1], 2])
     if rebalancing:
+        # To rebalance classes, use two different values of C based on the empirical prior
         pi_T_emp = sum(LTR == 1) / DTR.shape[1]
         Ct = C * pi_T / pi_T_emp
         Cf = C * (1 - pi_T) / (1 - pi_T_emp)
@@ -90,17 +91,17 @@ def kernel_SVM(DTR, LTR, DTE, LTE, C, type, pi, Cfn, Cfp, pi_T, d = 0, c = 0, ga
         B[LTR == 0, 1] = Cf
     else:
         B[:, 1] = C
+    # Optimize the objective function
     optAlpha, _, _ = fmin_l_bfgs_b(obj_function_gradient, np.zeros(DTR.shape[1]),
                                         approx_grad = False, bounds = B, factr = 10000.0)
 
-    # Compute scores
+    # Compute scores and minDCF
     S = np.sum((optAlpha * Z).reshape([DTR.shape[1], 1]) * kernel(DTR, DTE, type, d, c, gamma, csi), axis = 0)
-
     minDCF, _ = min_DCF(S, pi, Cfn, Cfp, LTE)
 
     return S, minDCF
 
-
+# Perform k-fold cross validation on test data for the specified model
 def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, C, pi_T, K_SVM, rebalancing = True, 
                             gamma = 0, seed = 0, type = "", just_llr = False):
 
@@ -113,7 +114,7 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, C, pi_T, K_SVM, r
     llr = np.zeros([D.shape[1], ])
 
     for count in range(k):
-
+        # Define training and test partitions
         if start_index + elements > D.shape[1]:
             end_index = D.shape[1]
         else:
@@ -128,6 +129,7 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, C, pi_T, K_SVM, r
         DTE = D[:, idxTest]
         LTE = L[idxTest]
 
+        # Train the classifier and compute llr on the current partition
         if type == "": # linear SVM
             llr[idxTest], _ = classifier(DTR, LTR, DTE, LTE, C, K_SVM, pi, Cfp, Cfn, pi_T, rebalancing)
         else: # kernel SVM
@@ -136,6 +138,7 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, C, pi_T, K_SVM, r
 
         start_index += elements
 
+    # Evaluate results after all k-fold iterations (when all llr are available)
     if just_llr:
         minDCF = 0
     else:
@@ -147,6 +150,9 @@ def k_fold_cross_validation(D, L, classifier, k, pi, Cfp, Cfn, C, pi_T, K_SVM, r
 
 
 if __name__ == "__main__":
+
+    ### Train and evaluate different SVM models using cross validation and single split
+    ### Save results in a file and print figures for hyperparameters estimation
 
     D, L = load("../Data/Train.txt")    
     (DTR, LTR), (DTE, LTE) = split_db_4to1(D, L)
@@ -162,10 +168,8 @@ if __name__ == "__main__":
     k = 5
     K_SVM = 1
 
-    """
-    LINEAR SVM
-    """
-    """
+    ### LINEAR SVM
+    
     img1_val = ["SVM_C_kfold_nobal.png", "SVM_C_kfold_bal.png"]
     img2_val = ["SVM_C_single_split_nobal.png", "SVM_C_single_split_bal.png"]
     fileName = "../Results/linear_SVM_results.txt"
@@ -242,11 +246,8 @@ if __name__ == "__main__":
             plt.legend(["Raw", "Z-normalized", "Gaussianized"])        
             plt.savefig("../Images/" + img2)
 
-    """
-    """
-    QUADRATIC KERNEL SVM
-    """
-    """
+    ### QUADRATIC KERNEL SVM
+    
     fileName = "../Results/quad_SVM_results.txt"
     with open(fileName, "w") as f:
         
@@ -298,11 +299,9 @@ if __name__ == "__main__":
         plt.ylabel("min DCF")
         plt.legend(["No balancing", "Balancing"])
         plt.savefig("../Images/" + img2)
-    """
-    """
-    RBF KERNEL SVM
-    """
-    """
+    
+    ### RBF KERNEL SVM
+    
     fileName = "../Results/RBF_SVM_results.txt"
     gamma_val = [np.exp(-1), np.exp(-2)]
 
@@ -365,4 +364,3 @@ if __name__ == "__main__":
         plt.legend([r"$log \gamma = -1$"+", No balancing", r"$log \gamma = -1$"+", Balancing",
             r"$log \gamma = -2$"+", No balancing", r"$log \gamma = -2$"+", Balancing"])
         plt.savefig("../Images/" + img2)
-        """

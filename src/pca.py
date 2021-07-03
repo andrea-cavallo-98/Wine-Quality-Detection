@@ -1,7 +1,4 @@
-
 import numpy as np
-import matplotlib.pyplot as plt
-from load_data import load, attributes_names, class_names, n_attr, n_class
 
 def covariance_matrix(D):
     # find dataset mean
@@ -12,7 +9,7 @@ def covariance_matrix(D):
     C = np.dot(DC, DC.T) / D.shape[1]
     return C
 
-
+# Compute PCA on the given data 
 def compute_pca(m, D, use_svd = False):
     C = covariance_matrix(D)
     # compute eigenvalues and eigenvectors
@@ -27,7 +24,8 @@ def compute_pca(m, D, use_svd = False):
     DP = np.dot(P.T, D)
     return DP
 
-
+# Compute PCA on training data and project test data on the
+# calculated directions
 def compute_pca_eval(m, DTR, DTE, use_svd = False):
     C = covariance_matrix(DTR)
     # compute eigenvalues and eigenvectors
@@ -41,17 +39,4 @@ def compute_pca_eval(m, DTR, DTE, use_svd = False):
     # apply projection to initial matrix
     DP = np.dot(P.T, DTE)
     return DP
-
-
-
-if __name__ == "__main__":
-    data_matrix, class_labels = load("../Data/Train.txt")
-    projected_matrix = compute_pca(2, data_matrix)
-    for current_class_label in range(n_class):
-        mask = (class_labels == current_class_label)
-        plt.scatter(projected_matrix[0,mask], projected_matrix[1,mask])
-    plt.legend(class_names)
-    plt.show()
-
-
 

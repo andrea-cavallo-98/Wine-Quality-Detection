@@ -1,12 +1,15 @@
 
 import numpy as np
 
+# Information about the dataset
 attributes_names = ["Fixed acidity", "Volatile acidity", "Citric acidity", "Residual sugar", "Chlorides",
                      "Free sulfur dioxide", "Total sulfur dioxide", "Density", "pH", "Sulphates", "Alcohol"]
 n_attr = len(attributes_names)
 class_names = ["Low quality", "High quality"]
 n_class = len(class_names)
 
+# Load dataset from textual file in a specified format (one sample per line, 
+# features are comma-separated)
 def load(fileName):
     
     class_labels_list = []
@@ -26,7 +29,7 @@ def load(fileName):
 
     return data_matrix, class_labels
 
-
+# Split the data in two parts (80%-20%)
 def split_db_4to1(D, L, seed=0):
     np.random.seed(seed)
 
