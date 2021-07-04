@@ -152,7 +152,7 @@ if __name__ == "__main__":
         (DGTR, _), (_, _) = split_db_4to1(DGTR, LTR)
         (DGTR10, _), (_, _) = split_db_4to1(DGTR10, LTR)
         (DGTR9, LTR), (_, _) = split_db_4to1(DGTR9, LTR)
-    """
+    
     #######################################
     # Gaussian models
     #######################################
@@ -406,7 +406,7 @@ if __name__ == "__main__":
     # RBF-SVM, Z-normalized features, C=10, loggamma=-2, rebalancing
     # Quadratic logistic regression, Z-normalized features, lambda = 0
     # GMM, Z-normalized features, 8 components
-    """
+    
     # Load scores on training data
     llrSVMTrain = np.load("../Data/llrSVM.npy")
     llrLRTrain = np.load("../Data/llrLR.npy")
@@ -445,7 +445,7 @@ if __name__ == "__main__":
         actDCF = act_DCF(llrGMMTest, pi, Cfn, Cfp, LTE)
         actDCF_cal, actDCF_estimated = evaluate_score_calibration(llrGMMTrain, llrGMMTest, LTR, LTE, pi, Cfn, Cfp, opt_lambda_GMM)
         f.write("\nGMM: actual: " + str(actDCF) + " calibrated: " + str(actDCF_cal) + " estimated: " + str(actDCF_estimated))
-        """
+        
         f.write("\n\n*********** SVM + LR ************\n\n")
         minDCF, actDCF, _ = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
@@ -457,9 +457,9 @@ if __name__ == "__main__":
         f.write("\n\n*********** SVM + LR + GMM ************\n\n")
         minDCF, actDCF, _ = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
-        """
+        
     
-    """
+    
     ### ROC plots
 
     FPR_SVM, TPR_SVM = ROC_curve(llrSVMTest, LTE)
@@ -553,4 +553,4 @@ if __name__ == "__main__":
         "SVM+LR: act DCF", "SVM+LR: min DCF", "SVM+GMM: act DCF", "SVM+GMM: min DCF", "SVM+LR+GMM: act DCF", "SVM+LR+GMM: min DCF", "Bayes_error2_eval")
     plot_Bayes_error4(DCF_SVM, DCF_LR, DCF_SVMLRGMM, minDCF_SVMLRGMM, 
         "SVM: act DCF", "LR: act DCF", "SVM+LR+GMM: act DCF", "SVM+LR+GMM: min DCF", "Bayes_error3_eval")
-    """
+    
