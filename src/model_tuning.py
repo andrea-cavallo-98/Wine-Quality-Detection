@@ -102,7 +102,7 @@ def k_fold_fusion2(D1, D2, L, k, pi, Cfp, Cfn, pi_T, seed = 0):
 
 # Perform cross validation to evaluate score calibration (scores are 
 # calibrated with a linear logistic regression model)
-def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T, seed=0):
+def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T, l, seed=0, just_cal = False):
 
     np.random.seed(seed)
     idx = np.random.permutation(D.shape[1])
@@ -112,7 +112,6 @@ def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T, seed=0):
 
     llr_cal = np.zeros([D.shape[1], ])
     opt_th_decisions = np.zeros([D.shape[1]])
-
 
     for count in range(k):
 
@@ -132,11 +131,12 @@ def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T, seed=0):
         LTE = L[idxTest]
 
         # Train a logistic regression model for score calibration
-        llr_cal[idxTest], _ = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0, pi_T, pi, Cfn, Cfp)
+        llr_cal[idxTest], _ = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp)
         
-        # Estimate optimal threshold on training set and perform decisions on test set
-        _, opt_t = min_DCF(DTR.reshape([DTR.shape[1],]), pi, Cfn, Cfp, LTR)
-        opt_th_decisions[idxTest] = 1 * (DTE.reshape([DTE.shape[1],]) > opt_t)
+        if not just_cal: # do not repeat optimal threshold estimation every time
+            # Estimate optimal threshold on training set and perform decisions on test set
+            _, opt_t = min_DCF(DTR.reshape([DTR.shape[1],]), pi, Cfn, Cfp, LTR)
+            opt_th_decisions[idxTest] = 1 * (DTE.reshape([DTE.shape[1],]) > opt_t)
 
         start_index += elements
 
@@ -145,9 +145,12 @@ def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T, seed=0):
     # Calculate act DCF for calibrated scores
     actDCF_cal = act_DCF(llr_cal, pi, Cfn, Cfp, L)
 
-    # Calculate act DCF for optimal estimated threshold
-    M = confusion_matrix(L, opt_th_decisions, 2)
-    _, actDCF_estimated = Bayes_risk(M, pi, Cfn, Cfp)
+    if just_cal:
+        actDCF_estimated = 0
+    else:
+        # Calculate act DCF for optimal estimated threshold
+        M = confusion_matrix(L, opt_th_decisions, 2)
+        _, actDCF_estimated = Bayes_risk(M, pi, Cfn, Cfp)
 
     return actDCF_cal, actDCF_estimated
 
@@ -156,11 +159,23 @@ def k_fold_calibration(D, L, k, pi, Cfp, Cfn, pi_T, seed=0):
 def analyse_scores_kfold(llr, pi, Cfn, Cfp, L, k, pi_T, name):
     
     actDCF = act_DCF(llr, pi, Cfn, Cfp, L)
-    actDCF_cal, actDCF_estimated = k_fold_calibration(llr.reshape([1,llr.shape[0]]), L, k, pi, Cfp, Cfn, pi_T)
+    # Choose the best value for lambda for logistic regression (try different ones)
+    min_actDCF_cal = 1
+    best_lambda = 0
+    actDCF_estimated = 0
+    for l in [0, 1e-6, 1e-3, 0.1, 1]:
+        if l == 1: # last iteration, calculate also optimal estimated threshold
+            actDCF_cal, actDCF_estimated = k_fold_calibration(llr.reshape([1,llr.shape[0]]), L, k, pi, Cfp, Cfn, pi_T, l, just_cal=False)
+        else: # not the last iteration, just evaluate score calibration
+            actDCF_cal, actDCF_estimated = k_fold_calibration(llr.reshape([1,llr.shape[0]]), L, k, pi, Cfp, Cfn, pi_T, l, just_cal=True)
+
+        if actDCF_cal < min_actDCF_cal:
+            min_actDCF_cal = actDCF_cal
+            best_lambda = l
 
     print("\n\n******* "+name+" *********\n")
     print("act DCF: "+str(actDCF))
-    print("act DCF, calibrated scores (logistic regression): "+ str(actDCF_cal))
+    print("act DCF, calibrated scores (logistic regression): "+ str(min_actDCF_cal) + " with best lambda: " + str(best_lambda))
     print("act DCF, estimated threshold: "+ str(actDCF_estimated))
 
 
@@ -225,6 +240,6 @@ if __name__ == "__main__":
 
 
     ###### Combined models ######
-    # analyse_fusion_kfold2(llrSVM, llrLR, L, k, pi, Cfp, Cfn, pi_T, "SVM + LR")
-    # analyse_fusion_kfold2(llrSVM, llrGMM, L, k, pi, Cfp, Cfn, pi_T, "SVM + GMM")
-    # analyse_fusion_kfold3(llrSVM, llrLR, llrGMM, L, k, pi, Cfp, Cfn, pi_T, "SVM + LR + GMM")
+    analyse_fusion_kfold2(llrSVM, llrLR, L, k, pi, Cfp, Cfn, pi_T, "SVM + LR")
+    analyse_fusion_kfold2(llrSVM, llrGMM, L, k, pi, Cfp, Cfn, pi_T, "SVM + GMM")
+    analyse_fusion_kfold3(llrSVM, llrLR, llrGMM, L, k, pi, Cfp, Cfn, pi_T, "SVM + LR + GMM")
