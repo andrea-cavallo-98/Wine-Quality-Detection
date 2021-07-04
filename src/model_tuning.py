@@ -8,7 +8,7 @@ import gmm as GMM
 
 # Perform cross validation to evaluate the fusion of 3 models (scores are
 # combined using linear logistic regression)
-def k_fold_fusion3(D1, D2, D3, L, k, pi, Cfp, Cfn, pi_T, seed = 0):
+def k_fold_fusion3(D1, D2, D3, L, k, pi, Cfp, Cfn, pi_T, l, seed = 0):
 
     np.random.seed(seed)
     idx = np.random.permutation(D1.shape[1])
@@ -43,7 +43,7 @@ def k_fold_fusion3(D1, D2, D3, L, k, pi, Cfp, Cfn, pi_T, seed = 0):
         LTE = L[idxTest]
 
         # Train a logistic regression model 
-        llr[idxTest], _ = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0, pi_T, pi, Cfn, Cfp)
+        llr[idxTest], _ = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp)
         
         start_index += elements
 
@@ -56,7 +56,7 @@ def k_fold_fusion3(D1, D2, D3, L, k, pi, Cfp, Cfn, pi_T, seed = 0):
 
 # Perform cross validation to evaluate the fusion of 2 models (scores are
 # combined using linear logistic regression)
-def k_fold_fusion2(D1, D2, L, k, pi, Cfp, Cfn, pi_T, seed = 0):
+def k_fold_fusion2(D1, D2, L, k, pi, Cfp, Cfn, pi_T, l, seed = 0):
 
     np.random.seed(seed)
     idx = np.random.permutation(D1.shape[1])
@@ -89,7 +89,7 @@ def k_fold_fusion2(D1, D2, L, k, pi, Cfp, Cfn, pi_T, seed = 0):
         LTE = L[idxTest]
 
         # Train a logistic regression model 
-        llr[idxTest], _ = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0, pi_T, pi, Cfn, Cfp)
+        llr[idxTest], _ = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, l, pi_T, pi, Cfn, Cfp)
         
         start_index += elements
 
@@ -181,20 +181,41 @@ def analyse_scores_kfold(llr, pi, Cfn, Cfp, L, k, pi_T, name):
 
 # Perform cross validation to evaluate fusion of 2 models and print results
 def analyse_fusion_kfold2(D1, D2, L, k, pi, Cfp, Cfn, pi_T, name):
-    minDCF, actDCF = k_fold_fusion2(D1.reshape([1,D1.shape[0]]), D2.reshape([1,D2.shape[0]]), L, k, pi, Cfp, Cfn, pi_T)
+    # Choose the best value for lambda for logistic regression (try different ones)
+    min_minDCF = 1
+    min_actDCF = 1
+    best_lambda = 0
+    for l in [0, 1e-6, 1e-3, 0.1, 1]:
+        minDCF, actDCF = k_fold_fusion2(D1.reshape([1,D1.shape[0]]), D2.reshape([1,D2.shape[0]]), L, k, pi, Cfp, Cfn, pi_T, l)
+        if minDCF < min_minDCF:
+            min_minDCF = minDCF
+            min_actDCF = actDCF
+            best_lambda = l
 
     print("\n\n******* " + name + " ********")
-    print("min DCF: " + str(minDCF))
-    print("act DCF: " + str(actDCF))
+    print("min DCF: " + str(min_minDCF))
+    print("act DCF: " + str(min_actDCF))
+    print("best lambda: " + str(best_lambda))
 
 
 # Perform cross validation to evaluate fusion of 3 models and print results
 def analyse_fusion_kfold3(D1, D2, D3, L, k, pi, Cfp, Cfn, pi_T, name):
-    minDCF, actDCF = k_fold_fusion3(D1.reshape([1,D1.shape[0]]), D2.reshape([1,D2.shape[0]]), D3.reshape([1,D3.shape[0]]), L, k, pi, Cfp, Cfn, pi_T)
+    # Choose the best value for lambda for logistic regression (try different ones)
+    min_minDCF = 1
+    min_actDCF = 1
+    best_lambda = 0
+    for l in [0, 1e-6, 1e-3, 0.1, 1]:
+        minDCF, actDCF = k_fold_fusion3(D1.reshape([1,D1.shape[0]]), D2.reshape([1,D2.shape[0]]), D3.reshape([1,D3.shape[0]]), L, k, pi, Cfp, Cfn, pi_T, l)
+        if minDCF < min_minDCF:
+            min_minDCF = minDCF
+            min_actDCF = actDCF
+            best_lambda = l
 
     print("\n\n******* " + name + " ********")
-    print("min DCF: " + str(minDCF))
-    print("act DCF: " + str(actDCF))
+    print("min DCF: " + str(min_minDCF))
+    print("act DCF: " + str(min_actDCF))
+    print("best lambda: " + str(best_lambda))
+
 
 
 
@@ -222,20 +243,20 @@ if __name__ == "__main__":
     #_, llrSVM = SVM.k_fold_cross_validation(DN, L, SVM.kernel_SVM, k, pi, Cfp, Cfn, 10, pi_T, 1, rebalancing = True, type = "RBF", gamma = np.exp(-2), just_llr=True)
     # np.save("llrSVM.npy", llrSVM)
     llrSVM = np.load("../Data/llrSVM.npy")
-    analyse_scores_kfold(llrSVM, pi, Cfn, Cfp, L, k, pi_T, "SVM")
+    # analyse_scores_kfold(llrSVM, pi, Cfn, Cfp, L, k, pi_T, "SVM")
 
     ###### Quadratic LR, lambda = 0, Z-normalized features, no PCA ######
 
     #_, llrLR = LR.k_fold_cross_validation(DN, L, LR.quadratic_logistic_regression, k, pi, Cfp, Cfn, 0, pi_T)
     # np.save("llrLR.npy", llrLR)
     llrLR = np.load("../Data/llrLR.npy")
-    analyse_scores_kfold(llrLR, pi, Cfn, Cfp, L, k, pi_T, "LR")
+    # analyse_scores_kfold(llrLR, pi, Cfn, Cfp, L, k, pi_T, "LR")
    
     ###### GMM, Z-normalized features, 8 components ######
     #_, llrGMM = GMM.k_fold_cross_validation(DN, L, k, pi, Cfp, Cfn, False, False, 8, seed = 0, just_llr = True)
     # np.save("llrGMM.npy", llrGMM)
     llrGMM = np.load("../Data/llrGMM.npy")
-    analyse_scores_kfold(llrGMM, pi, Cfn, Cfp, L, k, pi_T, "GMM")
+    # analyse_scores_kfold(llrGMM, pi, Cfn, Cfp, L, k, pi_T, "GMM")
 
 
 

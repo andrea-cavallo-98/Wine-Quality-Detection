@@ -33,7 +33,7 @@ def evaluate_score_calibration(llrTrain, llrTest, LTR, LTE, pi, Cfn, Cfp, l):
 
 # Evaluate fusion of 2 models by training a logistic regression model on training data
 # and evaluating it on test data
-def evaluate_model_fusion(llrTrain1, llrTrain2, llrTest1, llrTest2, LTR, LTE):
+def evaluate_model_fusion(llrTrain1, llrTrain2, llrTest1, llrTest2, LTR, LTE, l):
     
     # Define DTR and DTE as combinations of llr from different models
     DTR = np.zeros([2, llrTrain1.shape[0]])
@@ -43,14 +43,14 @@ def evaluate_model_fusion(llrTrain1, llrTrain2, llrTest1, llrTest2, LTR, LTE):
     DTE[0, :] = llrTest1.reshape([llrTest1.shape[0],])
     DTE[1, :] = llrTest2.reshape([llrTest2.shape[0],])
 
-    s, minDCF = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0, 0.5, pi, Cfn, Cfp, calibration=False)
+    s, minDCF = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, l, 0.5, pi, Cfn, Cfp)
     actDCF = act_DCF(s, pi, Cfn, Cfp, LTE)
 
     return minDCF, actDCF, s
 
 # Evaluate fusion of 3 models by training a logistic regression model on training data
 # and evaluating it on test data
-def evaluate_model_fusion3(llrTrain1, llrTrain2, llrTrain3, llrTest1, llrTest2, llrTest3, LTR, LTE):
+def evaluate_model_fusion3(llrTrain1, llrTrain2, llrTrain3, llrTest1, llrTest2, llrTest3, LTR, LTE, l):
     
     # Define DTR and DTE as combinations of llr from different models
     DTR = np.zeros([3, llrTrain1.shape[0]])
@@ -62,7 +62,7 @@ def evaluate_model_fusion3(llrTrain1, llrTrain2, llrTrain3, llrTest1, llrTest2, 
     DTE[1, :] = llrTest2.reshape([llrTest2.shape[0],])
     DTE[2, :] = llrTest3.reshape([llrTest3.shape[0],])
 
-    s, minDCF = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, 0, 0.5, pi, Cfn, Cfp, calibration=False)
+    s, minDCF = LR.linear_logistic_regression(DTR, LTR, DTE, LTE, l, 0.5, pi, Cfn, Cfp)
     actDCF = act_DCF(s, pi, Cfn, Cfp, LTE)
 
     return minDCF, actDCF, s
@@ -431,6 +431,9 @@ if __name__ == "__main__":
     opt_lambda_SVM = 0.1
     opt_lambda_LR = 1
     opt_lambda_GMM = 0.1
+    opt_lambda_SVMLR = 0.001
+    opt_lambda_SVMGMM = 0.001
+    opt_lambda_SVMLRGMM = 0
     
     fileName = "../Results/fusions_results_eval.txt"
     with open(fileName, "w") as f:
@@ -447,15 +450,15 @@ if __name__ == "__main__":
         f.write("\nGMM: actual: " + str(actDCF) + " calibrated: " + str(actDCF_cal) + " estimated: " + str(actDCF_estimated))
         
         f.write("\n\n*********** SVM + LR ************\n\n")
-        minDCF, actDCF, _ = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE)
+        minDCF, actDCF, _ = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE, opt_lambda_SVMLR)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
         
         f.write("\n\n*********** SVM + GMM ************\n\n")
-        minDCF, actDCF, _ = evaluate_model_fusion(llrSVMTrain, llrGMMTrain, llrSVMTest, llrGMMTest, LTR, LTE)
+        minDCF, actDCF, _ = evaluate_model_fusion(llrSVMTrain, llrGMMTrain, llrSVMTest, llrGMMTest, LTR, LTE, opt_lambda_SVMGMM)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
-
+        
         f.write("\n\n*********** SVM + LR + GMM ************\n\n")
-        minDCF, actDCF, _ = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE)
+        minDCF, actDCF, _ = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE, opt_lambda_SVMLRGMM)
         f.write("min DCF: " + str(minDCF) + " act DCF: " + str(actDCF))
         
     
@@ -466,9 +469,9 @@ if __name__ == "__main__":
     FPR_LR, TPR_LR = ROC_curve(llrLRTest, LTE)
     FPR_GMM, TPR_GMM = ROC_curve(llrGMMTest, LTE)
 
-    _, _, llrSVMLR = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE)
-    _, _, llrSVMGMM = evaluate_model_fusion(llrSVMTrain, llrGMMTrain, llrSVMTest, llrGMMTest, LTR, LTE)
-    _, _, llrSVMLRGMM = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE)
+    _, _, llrSVMLR = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE, opt_lambda_SVMLR)
+    _, _, llrSVMGMM = evaluate_model_fusion(llrSVMTrain, llrGMMTrain, llrSVMTest, llrGMMTest, LTR, LTE, opt_lambda_SVMGMM)
+    _, _, llrSVMLRGMM = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE, opt_lambda_SVMLRGMM)
 
     FPR_SVMLR, TPR_SVMLR = ROC_curve(llrSVMLR, LTE)
     FPR_SVMGMM, TPR_SVMGMM = ROC_curve(llrSVMGMM, LTE)
@@ -504,16 +507,11 @@ if __name__ == "__main__":
     plot_ROC_curve(FPR_SVMLR, TPR_SVMLR, FPR_SVMGMM, TPR_SVMGMM, FPR_SVMLRGMM, TPR_SVMLRGMM, "SVM+LR", "SVM+GMM", "SVM+LR+GMM", "ROC_eval2")
     plot_ROC_curve(FPR_SVM, TPR_SVM, FPR_LR, TPR_LR, FPR_SVMLRGMM, TPR_SVMLRGMM, "SVM", "LR", "SVM+LR+GMM", "ROC_eval3")
     
-    
     ### min DCF plots
 
     DCF_SVM, minDCF_SVM = Bayes_error_plots(llrSVMTest, LTE)
     DCF_LR, minDCF_LR = Bayes_error_plots(llrLRTest, LTE)
     DCF_GMM, minDCF_GMM = Bayes_error_plots(llrGMMTest, LTE)
-
-    _, _, llrSVMLR = evaluate_model_fusion(llrSVMTrain, llrLRTrain, llrSVMTest, llrLRTest, LTR, LTE)
-    _, _, llrSVMGMM = evaluate_model_fusion(llrSVMTrain, llrGMMTrain, llrSVMTest, llrGMMTest, LTR, LTE)
-    _, _, llrSVMLRGMM = evaluate_model_fusion3(llrSVMTrain, llrLRTrain, llrGMMTrain, llrSVMTest, llrLRTest, llrGMMTest, LTR, LTE)
 
     DCF_SVMLR, minDCF_SVMLR = Bayes_error_plots(llrSVMLR, LTE)
     DCF_SVMGMM, minDCF_SVMGMM = Bayes_error_plots(llrSVMGMM, LTE)
@@ -553,4 +551,3 @@ if __name__ == "__main__":
         "SVM+LR: act DCF", "SVM+LR: min DCF", "SVM+GMM: act DCF", "SVM+GMM: min DCF", "SVM+LR+GMM: act DCF", "SVM+LR+GMM: min DCF", "Bayes_error2_eval")
     plot_Bayes_error4(DCF_SVM, DCF_LR, DCF_SVMLRGMM, minDCF_SVMLRGMM, 
         "SVM: act DCF", "LR: act DCF", "SVM+LR+GMM: act DCF", "SVM+LR+GMM: min DCF", "Bayes_error3_eval")
-    
