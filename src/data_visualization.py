@@ -1,3 +1,16 @@
+"""
+
+*** DATA VISUALIZATION ***
+
+Functions to visualize the features and perform some preprocessing. In particular:
+
+* print histograms of the features
+* gaussianize features, both for the training and for the test set
+* calculate the correlation among features and print it with a heatmap
+* perform Z-normalization, both for the training and for the test set
+
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from load_data import load, attributes_names, class_names
@@ -61,8 +74,8 @@ if __name__ == "__main__":
     print_histograms(data_matrix, class_labels, "RawFeatHist")
     
     ### Gaussianize features and save them
-    # gauss_feat = gaussianize_features(data_matrix)
-    # np.save("gaussianized_features.npy", gauss_feat)
+    gauss_feat = gaussianize_features(data_matrix)
+    np.save("gaussianized_features.npy", gauss_feat)
     gauss_feat = np.load("../Data/gaussianized_features.npy")
     print_histograms(gauss_feat, class_labels, "GaussFeatHist")
 
@@ -77,8 +90,8 @@ if __name__ == "__main__":
     ### Gaussianize test data using training data as reference
     DTR, LTR = load("../Data/Train.txt")
     DTE, LTE = load("../Data/Test.txt")
-    # DTE_gauss = gaussianize_features_eval(DTR, DTE)
-    # np.save("gaus_test.npy", DTE_gauss)
+    DTE_gauss = gaussianize_features_eval(DTR, DTE)
+    np.save("gaus_test.npy", DTE_gauss)
     DTE_gauss = np.load("../Data/gaus_test.npy")
 
     ### Distributions of gaussianized features

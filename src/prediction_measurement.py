@@ -1,3 +1,15 @@
+"""
+
+*** PREDICTIONS MEASUREMENT ***
+
+Functions to analyse model performances and do some plots. In particular:
+
+* calculate from the log-likelihood ratios the minimum DCF and the actual DCF using the theoretical threshold
+* print ROC curves and Bayes error plots from the log-likelihood ratios
+* calculate Bayes risk, optimal Bayes decisions and confusion matrixes
+
+"""
+
 import numpy as np
 
 # Compute confusion matrix with given predictions

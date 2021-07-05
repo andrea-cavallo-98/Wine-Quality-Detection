@@ -1,3 +1,11 @@
+"""
+
+*** LOAD AND SPLIT DATA ***
+
+Functions to load the dataset and to split it when needed (two splits, one containing 80% of the data, 
+the other 20%), plus some information on the data (such as attribute names, number of classes...)
+
+"""
 
 import numpy as np
 

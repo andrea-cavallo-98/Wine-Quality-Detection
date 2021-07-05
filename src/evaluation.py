@@ -1,3 +1,17 @@
+"""
+
+*** EVALUATION ***
+
+Functions to evaluate the decisions on the test set. 
+
+The main function trains different classifiers (Gaussian, logistic regression, SVM and GMM) on the training 
+set and calculates the min DCF on the test set. Then, the actual DCF of the selected models is evaluated, 
+using also score calibration and optimal threshold estimation. In conclusion, actual DCF of fusions of 
+different models are evaluated, and corresponding ROC plots and Bayes error plots are printed. All results 
+are stored in textual files or in png files
+
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from load_data import load, split_db_4to1
@@ -94,6 +108,8 @@ def plot_Bayes_error(D1, D2, D3, D4, D5, D6, l1, l2, l3, l4, l5, l6, figName):
     plt.ylim([0, 1.1])
     plt.xlim([-3, 3])
     plt.legend()
+    plt.xlabel(r"$\tilde{p}$")
+    plt.ylabel("DCF")
     plt.savefig("../Images/" + figName +".png")   
 
 
@@ -110,6 +126,8 @@ def plot_Bayes_error4(D1, D2, D3, D4, l1, l2, l3, l4, figName):
     plt.ylim([0, 1.1])
     plt.xlim([-3, 3])
     plt.legend()
+    plt.xlabel(r"$\tilde{p}$")
+    plt.ylabel("DCF")
     plt.savefig("../Images/" + figName +".png")   
 
 
@@ -413,12 +431,12 @@ if __name__ == "__main__":
     llrGMMTrain = np.load("../Data/llrGMM.npy")
 
     # Train models on all training dataset and get scores on evaluation dataset
-    # llrSVMTest, _ = SVM.kernel_SVM(DNTR, LTR, DNTE, LTE, 10, "RBF", pi, Cfn, Cfp, pi_T, gamma = np.exp(-2), csi = K_SVM**0.5, rebalancing = True)
-    # llrLRTest, _ = LR.quadratic_logistic_regression(DNTR, LTR, DNTE, LTE, 0, pi_T, pi, Cfn, Cfp)
-    # llrGMMTest, _ = GMM.GMM_classifier(DNTR, LTR, DNTE, LTE, 2, 8, pi, Cfn, Cfp, False, False)
-    # np.save("llrSVMTest.npy", llrSVMTest)
-    # np.save("llrLRTest.npy", llrLRTest)
-    # np.save("llrGMMTest.npy", llrGMMTest)
+    llrSVMTest, _ = SVM.kernel_SVM(DNTR, LTR, DNTE, LTE, 10, "RBF", pi, Cfn, Cfp, pi_T, gamma = np.exp(-2), csi = K_SVM**0.5, rebalancing = True)
+    llrLRTest, _ = LR.quadratic_logistic_regression(DNTR, LTR, DNTE, LTE, 0, pi_T, pi, Cfn, Cfp)
+    llrGMMTest, _ = GMM.GMM_classifier(DNTR, LTR, DNTE, LTE, 2, 8, pi, Cfn, Cfp, False, False)
+    np.save("llrSVMTest.npy", llrSVMTest)
+    np.save("llrLRTest.npy", llrLRTest)
+    np.save("llrGMMTest.npy", llrGMMTest)
 
     llrSVMTest = np.load("../Data/llrSVMTest.npy")
     llrLRTest = np.load("../Data/llrLRTest.npy")
@@ -506,7 +524,7 @@ if __name__ == "__main__":
     plot_ROC_curve(FPR_SVM, TPR_SVM, FPR_LR, TPR_LR, FPR_GMM, TPR_GMM, "SVM", "LR", "GMM", "ROC_eval1")
     plot_ROC_curve(FPR_SVMLR, TPR_SVMLR, FPR_SVMGMM, TPR_SVMGMM, FPR_SVMLRGMM, TPR_SVMLRGMM, "SVM+LR", "SVM+GMM", "SVM+LR+GMM", "ROC_eval2")
     plot_ROC_curve(FPR_SVM, TPR_SVM, FPR_LR, TPR_LR, FPR_SVMLRGMM, TPR_SVMLRGMM, "SVM", "LR", "SVM+LR+GMM", "ROC_eval3")
-    
+
     ### min DCF plots
 
     DCF_SVM, minDCF_SVM = Bayes_error_plots(llrSVMTest, LTE)
@@ -530,7 +548,6 @@ if __name__ == "__main__":
     np.save("../Data/DCF_SVMLRGMM.npy", DCF_SVMLRGMM)
     np.save("../Data/minDCF_SVMLRGMM.npy", minDCF_SVMLRGMM)
 
-    
     DCF_SVM = np.load("../Data/DCF_SVM.npy")
     minDCF_SVM = np.load("../Data/minDCF_SVM.npy")
     DCF_LR = np.load("../Data/DCF_LR.npy")

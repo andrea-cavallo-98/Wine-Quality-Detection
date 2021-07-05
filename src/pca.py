@@ -1,3 +1,12 @@
+"""
+
+*** PCA ***
+
+Functions to compute PCA over a dataset, both for training and for test data 
+(which require to project the test data on the dimensions evaluated from the training data).
+
+"""
+
 import numpy as np
 
 def covariance_matrix(D):

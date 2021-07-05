@@ -1,3 +1,16 @@
+"""
+
+*** LOGISTIC REGRESSION ***
+
+Functions to train logistic regression models (linear and quadratic) and to evaluate their performances
+ through k-fold cross validation. 
+ 
+The main function trains some models on differently pre-processed data (raw, Z-normalized, gaussianized, 
+with PCA or not) using different values of the hyperparameters and calculates the min DCF using both 5-fold 
+cross validation and a single split approach. Results are stored in a textual file.
+
+"""
+
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 from load_data import load, split_db_4to1

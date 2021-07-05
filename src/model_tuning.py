@@ -1,3 +1,19 @@
+"""
+
+*** MODEL TUNING ***
+
+Perform further analysis on the selected most promising models (RBF kernel SVM, quadratic logistic regression 
+and GMM with 8 components). 
+
+In particular, define functions to estimate the optimal threshold and apply it to a test set, to calibrate scores 
+and to combine the outputs of different classifiers. All these actions are performed with k-fold cross validation. 
+
+The main function trains the three selected models and analyses their actual DCF with no calibration, 
+with score calibration and also by estimating an optimal threshold. Then, it also analyses the fusion of the 
+selected models in terms of min DCF and actual DCF. Results are printed on the console.
+
+"""
+
 import numpy as np
 from load_data import load
 from prediction_measurement import act_DCF, min_DCF, confusion_matrix, Bayes_risk
@@ -240,23 +256,23 @@ if __name__ == "__main__":
 
     ###### RBF kernel SVM with C = 10 and log(gamma) = -2, rebalacing and Z-normalized features ######
     
-    #_, llrSVM = SVM.k_fold_cross_validation(DN, L, SVM.kernel_SVM, k, pi, Cfp, Cfn, 10, pi_T, 1, rebalancing = True, type = "RBF", gamma = np.exp(-2), just_llr=True)
-    # np.save("llrSVM.npy", llrSVM)
+    _, llrSVM = SVM.k_fold_cross_validation(DN, L, SVM.kernel_SVM, k, pi, Cfp, Cfn, 10, pi_T, 1, rebalancing = True, type = "RBF", gamma = np.exp(-2), just_llr=True)
+    np.save("llrSVM.npy", llrSVM)
     llrSVM = np.load("../Data/llrSVM.npy")
-    # analyse_scores_kfold(llrSVM, pi, Cfn, Cfp, L, k, pi_T, "SVM")
+    analyse_scores_kfold(llrSVM, pi, Cfn, Cfp, L, k, pi_T, "SVM")
 
     ###### Quadratic LR, lambda = 0, Z-normalized features, no PCA ######
 
-    #_, llrLR = LR.k_fold_cross_validation(DN, L, LR.quadratic_logistic_regression, k, pi, Cfp, Cfn, 0, pi_T)
-    # np.save("llrLR.npy", llrLR)
+    _, llrLR = LR.k_fold_cross_validation(DN, L, LR.quadratic_logistic_regression, k, pi, Cfp, Cfn, 0, pi_T)
+    np.save("llrLR.npy", llrLR)
     llrLR = np.load("../Data/llrLR.npy")
-    # analyse_scores_kfold(llrLR, pi, Cfn, Cfp, L, k, pi_T, "LR")
+    analyse_scores_kfold(llrLR, pi, Cfn, Cfp, L, k, pi_T, "LR")
    
     ###### GMM, Z-normalized features, 8 components ######
-    #_, llrGMM = GMM.k_fold_cross_validation(DN, L, k, pi, Cfp, Cfn, False, False, 8, seed = 0, just_llr = True)
-    # np.save("llrGMM.npy", llrGMM)
+    _, llrGMM = GMM.k_fold_cross_validation(DN, L, k, pi, Cfp, Cfn, False, False, 8, seed = 0, just_llr = True)
+    np.save("llrGMM.npy", llrGMM)
     llrGMM = np.load("../Data/llrGMM.npy")
-    # analyse_scores_kfold(llrGMM, pi, Cfn, Cfp, L, k, pi_T, "GMM")
+    analyse_scores_kfold(llrGMM, pi, Cfn, Cfp, L, k, pi_T, "GMM")
 
 
 

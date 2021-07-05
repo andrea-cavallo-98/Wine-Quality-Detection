@@ -1,3 +1,15 @@
+"""
+
+*** GMM ***
+
+Functions to train GMM classifiers (standard, tied or diagonal) and to evaluate their performances through 
+k-fold cross validation. 
+
+The main function trains different GMM classifiers on Z-normalized and Gaussianized features using several 
+numbers of components and calculates the min DCF using 5-fold cross validation. Results are stored in a textual file.
+
+"""
+
 import numpy as np
 from scipy.special import logsumexp
 from load_data import load, split_db_4to1

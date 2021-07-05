@@ -1,3 +1,16 @@
+"""
+
+*** GAUSSIAN MODELS ***
+
+Functions to train different Gaussian models (MVG, naive Bayes, tied MVG and tied naive Bayes)
+and to evaluate their performances through k-fold cross validation. 
+
+The main function trains the 4 Gaussian models on differently pre-processed data (raw, Z-normalized, 
+gaussianized, with PCA or not) and calculates the min DCF using both 5-fold cross validation and a 
+single split approach. Results are stored in a textual file.
+
+"""
+
 import numpy as np
 from load_data import load, n_class, split_db_4to1
 import numpy.linalg
